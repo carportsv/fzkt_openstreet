@@ -51,7 +51,7 @@ app.*.map.json
 # Firebase
 google-services.json
 GoogleService-Info.plist
-firebase_options.dart
+# firebase_options.dart - NECESARIO para compilar, debe estar en git
 
 # Supabase
 supabase/.temp/
@@ -68,6 +68,32 @@ build/
 *.apk
 *.aab
 *.ipa
+
+# Android build artifacts (NO incluir en git)
+android/app/build/
+android/build/
+android/.gradle/
+android/local.properties
+
+# iOS build artifacts (NO incluir en git)
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/ephemeral/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/Flutter/app.flx
+ios/Flutter/app.zip
+ios/Flutter/flutter_assets/
+ios/Flutter/flutter_export_environment.sh
+ios/ServiceDefinitions.json
+ios/Runner/GeneratedPluginRegistrant.*
+
+# Expo/React Native (NO incluir node_modules ni builds)
+expo/node_modules/
+expo/.expo/
+expo/dist/
+expo/web-build/
 
 # Logs
 *.log
