@@ -146,99 +146,92 @@ class _GeneralPricingScreenState extends State<GeneralPricingScreen> {
       color: Colors.white,
       child: Container(
         color: Colors.white,
-        child: Padding(
-          padding: EdgeInsets.all(isTablet ? 24.0 : 16.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'General Pricing',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF1A202C),
-                    fontSize: isTablet ? null : 20,
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: EdgeInsets.all(isTablet ? 24.0 : 16.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'General Pricing',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF1A202C),
+                      fontSize: isTablet ? null : 20,
+                    ),
                   ),
-                ),
-                Container(
-                  margin: const EdgeInsets.only(top: 8, bottom: 24),
-                  height: 1,
-                  color: Colors.grey.shade300,
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                      width: 250,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2563EB),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  Container(
+                    margin: const EdgeInsets.only(top: 8, bottom: 24),
+                    height: 1,
+                    color: Colors.grey.shade300,
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: 250,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF2563EB),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          onPressed: _loading ? null : _savePricing,
+                          child: _loading
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                )
+                              : const Text(
+                                  'UPDATE',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
                         ),
-                        onPressed: _loading ? null : _savePricing,
-                        child: _loading
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                ),
-                              )
-                            : const Text(
-                                'UPDATE',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                Expanded(
-                  child: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildCurrencyField(
-                          label: 'Price Decimals',
-                          controller: _priceDecimalsController,
-                          showCurrency: false,
-                        ),
-                        const SizedBox(height: 20),
-                        _buildCurrencyField(
-                          label: 'Minimum price for additional drop off',
-                          controller: _minDropOffPriceController,
-                        ),
-                        const SizedBox(height: 20),
-                        _buildCurrencyField(
-                          label: 'Child seat price',
-                          controller: _childSeatPriceController,
-                        ),
-                        const SizedBox(height: 20),
-                        _buildDropdown(
-                          label: 'Card payment price type',
-                          value: _cardPaymentType,
-                          items: ['Amount', 'Percentage'],
-                          onChanged: (value) {
-                            setState(() => _cardPaymentType = value!);
-                          },
-                        ),
-                        const SizedBox(height: 20),
-                        _buildCurrencyField(
-                          label: 'Card payment Amount / Percentage',
-                          controller: _cardPaymentAmountController,
-                        ),
-                      ],
-                    ),
+                    ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 24),
+                  _buildCurrencyField(
+                    label: 'Price Decimals',
+                    controller: _priceDecimalsController,
+                    showCurrency: false,
+                  ),
+                  const SizedBox(height: 20),
+                  _buildCurrencyField(
+                    label: 'Minimum price for additional drop off',
+                    controller: _minDropOffPriceController,
+                  ),
+                  const SizedBox(height: 20),
+                  _buildCurrencyField(
+                    label: 'Child seat price',
+                    controller: _childSeatPriceController,
+                  ),
+                  const SizedBox(height: 20),
+                  _buildDropdown(
+                    label: 'Card payment price type',
+                    value: _cardPaymentType,
+                    items: ['Amount', 'Percentage'],
+                    onChanged: (value) {
+                      setState(() => _cardPaymentType = value!);
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  _buildCurrencyField(
+                    label: 'Card payment Amount / Percentage',
+                    controller: _cardPaymentAmountController,
+                  ),
+                ],
+              ),
             ),
           ),
         ),

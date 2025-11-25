@@ -1110,12 +1110,173 @@ class _AdminScreenWrapper extends StatelessWidget {
                   ),
                 ],
               ),
-              _buildMenuItem(
-                text: 'Pricing',
+              _buildExpansionTile(
+                title: 'Pricing',
                 icon: Icons.price_change,
-                onTap: () {},
                 isExpanded: isExpanded,
                 context: context,
+                children: [
+                  _buildPricingMenuItem(
+                    text: 'General',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => _AdminScreenWrapper(
+                            title: 'General Pricing',
+                            content: const GeneralPricingScreen(),
+                            onSelectItem: (key) {},
+                            onLogout: onLogout,
+                          ),
+                        ),
+                      );
+                    },
+                    context: context,
+                  ),
+                  _buildPricingMenuItem(
+                    text: 'Vehicle Pricing',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => _AdminScreenWrapper(
+                            title: 'Vehicle Pricing',
+                            content: const VehiclePricingScreen(),
+                            onSelectItem: (key) {},
+                            onLogout: onLogout,
+                          ),
+                        ),
+                      );
+                    },
+                    context: context,
+                  ),
+                  _buildPricingMenuItem(
+                    text: 'Hourly Packages',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => _AdminScreenWrapper(
+                            title: 'Hourly Packages',
+                            content: const HourlyPackagesScreen(),
+                            onSelectItem: (key) {},
+                            onLogout: onLogout,
+                          ),
+                        ),
+                      );
+                    },
+                    context: context,
+                  ),
+                  _buildPricingMenuItem(
+                    text: 'Location Category',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => _AdminScreenWrapper(
+                            title: 'Location Category',
+                            content: const LocationCategoryScreen(),
+                            onSelectItem: (key) {},
+                            onLogout: onLogout,
+                          ),
+                        ),
+                      );
+                    },
+                    context: context,
+                  ),
+                  _buildPricingMenuItem(
+                    text: 'Fixed Pricing',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => _AdminScreenWrapper(
+                            title: 'Fixed Pricing',
+                            content: const FixedPricingScreen(),
+                            onSelectItem: (key) {},
+                            onLogout: onLogout,
+                          ),
+                        ),
+                      );
+                    },
+                    context: context,
+                  ),
+                  _buildPricingMenuItem(
+                    text: 'Distance Slab',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => _AdminScreenWrapper(
+                            title: 'Distance Slab',
+                            content: const DistanceSlabScreen(),
+                            onSelectItem: (key) {},
+                            onLogout: onLogout,
+                          ),
+                        ),
+                      );
+                    },
+                    context: context,
+                  ),
+                  _buildPricingMenuItem(
+                    text: 'Congestion Charges',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => _AdminScreenWrapper(
+                            title: 'Congestion Charges',
+                            content: const CongestionChargesScreen(),
+                            onSelectItem: (key) {},
+                            onLogout: onLogout,
+                          ),
+                        ),
+                      );
+                    },
+                    context: context,
+                  ),
+                  _buildPricingMenuItem(
+                    text: 'Discounts - Date',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => _AdminScreenWrapper(
+                            title: 'Discounts / Surcharge - Date',
+                            content: const DiscountsDateScreen(),
+                            onSelectItem: (key) {},
+                            onLogout: onLogout,
+                          ),
+                        ),
+                      );
+                    },
+                    context: context,
+                  ),
+                  _buildPricingMenuItem(
+                    text: 'Discounts - Location',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => _AdminScreenWrapper(
+                            title: 'Discounts / Surcharge - Location',
+                            content: const DiscountsSurchargeLocationScreen(),
+                            onSelectItem: (key) {},
+                            onLogout: onLogout,
+                          ),
+                        ),
+                      );
+                    },
+                    context: context,
+                  ),
+                  _buildPricingMenuItem(
+                    text: 'Vouchers',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => _AdminScreenWrapper(
+                            title: 'Vouchers',
+                            content: const VouchersScreen(),
+                            onSelectItem: (key) {},
+                            onLogout: onLogout,
+                          ),
+                        ),
+                      );
+                    },
+                    context: context,
+                  ),
+                ],
               ),
               _buildMenuItem(
                 text: 'Settings',
@@ -1235,6 +1396,31 @@ class _AdminScreenWrapper extends StatelessWidget {
     );
   }
 
+  Widget _buildPricingMenuItem({
+    required String text,
+    required VoidCallback onTap,
+    required BuildContext context,
+  }) {
+    return ListTile(
+      dense: true,
+      title: Padding(
+        padding: const EdgeInsets.only(left: 32.0),
+        child: Row(
+          children: [
+            const Icon(Icons.circle, size: 8, color: Colors.white38),
+            const SizedBox(width: 16),
+            Text(text, style: const TextStyle(color: Colors.white60)),
+          ],
+        ),
+      ),
+      onTap: () {
+        Navigator.of(context).pop();
+        onTap();
+      },
+      hoverColor: Colors.black.withValues(alpha: 0.2),
+    );
+  }
+
   Widget _buildExpansionTile({
     required String title,
     required IconData icon,
@@ -1269,7 +1455,18 @@ class _AdminScreenWrapper extends StatelessWidget {
         ),
       ),
       drawer: _buildAdminDrawer(isExpanded: true, context: context),
-      body: content,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          // Si el contenido tiene un Expanded, no envolver en SingleChildScrollView
+          // De lo contrario, envolver para permitir scroll
+          return SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: content,
+            ),
+          );
+        },
+      ),
     );
   }
 }
