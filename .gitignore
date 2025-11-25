@@ -89,11 +89,8 @@ ios/Flutter/flutter_export_environment.sh
 ios/ServiceDefinitions.json
 ios/Runner/GeneratedPluginRegistrant.*
 
-# Expo/React Native (NO incluir node_modules ni builds)
-expo/node_modules/
-expo/.expo/
-expo/dist/
-expo/web-build/
+# Expo/React Native - NO incluir en git (solo referencia local)
+expo/
 
 # Logs
 *.log
