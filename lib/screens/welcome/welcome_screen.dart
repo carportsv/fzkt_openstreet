@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -35,12 +36,26 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   final _priceController = TextEditingController();
   final _distanceController = TextEditingController();
   final _clientNameController = TextEditingController();
+  final _clientEmailController = TextEditingController();
+  final _clientPhoneController = TextEditingController();
   final _dateController = TextEditingController();
   final _timeController = TextEditingController();
   final _notesController = TextEditingController();
+  // Card payment fields
+  final _cardNumberController = TextEditingController();
+  final _cardExpiryController = TextEditingController();
+  final _cardCvvController = TextEditingController();
+  final _cardNameController = TextEditingController();
 
   // Form State
   String _selectedPriority = 'normal';
+  String _selectedVehicleType = 'sedan';
+  String _selectedPaymentMethod = 'card';
+  int _passengerCount = 1;
+  int _childSeats = 0;
+  int _handLuggage = 0;
+  int _checkInLuggage = 0;
+  String? _selectedCustomerId;
   bool _isLoading = false;
 
   // Map State
@@ -283,18 +298,83 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               validator: _validateRequiredField,
             ),
 
-            // Price & Distance Row
+            // Vehicle Details Section
+            _buildSectionHeader('Vehicle Details'),
+            const SizedBox(height: _kSpacing),
+            _buildVehicleSelection(),
+            const SizedBox(height: _kSpacing),
             Row(
               children: [
                 Expanded(
-                  child: _buildTextFormField(
-                    label: 'Precio (\$)',
-                    controller: _priceController,
-                    isNumeric: true,
-                    validator: _validatePrice,
+                  child: _buildDropdownFormField(
+                    label: 'Passenger',
+                    value: _passengerCount.toString(),
+                    items: List.generate(8, (i) => (i + 1).toString()),
+                    onChanged: (val) => setState(() => _passengerCount = int.parse(val!)),
                   ),
                 ),
                 const SizedBox(width: _kSpacing),
+                Expanded(
+                  child: _buildDropdownFormField(
+                    label: 'Child Seats',
+                    value: _childSeats.toString(),
+                    items: List.generate(4, (i) => i.toString()),
+                    onChanged: (val) => setState(() => _childSeats = int.parse(val!)),
+                  ),
+                ),
+                const SizedBox(width: _kSpacing),
+                Expanded(
+                  child: _buildDropdownFormField(
+                    label: 'Hand Luggage',
+                    value: _handLuggage.toString(),
+                    items: List.generate(5, (i) => i.toString()),
+                    onChanged: (val) => setState(() => _handLuggage = int.parse(val!)),
+                  ),
+                ),
+                const SizedBox(width: _kSpacing),
+                Expanded(
+                  child: _buildDropdownFormField(
+                    label: 'Check-in Luggage',
+                    value: _checkInLuggage.toString(),
+                    items: List.generate(6, (i) => i.toString()),
+                    onChanged: (val) => setState(() => _checkInLuggage = int.parse(val!)),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: _kSpacing * 1.5),
+
+            // Passenger Details Section
+            _buildSectionHeader('Passenger Details'),
+            const SizedBox(height: _kSpacing),
+            _buildDropdownFormField(
+              label: 'Select Customer',
+              value: _selectedCustomerId,
+              items: const [DropdownMenuItem(value: null, child: Text('New Customer'))],
+              onChanged: (val) => setState(() => _selectedCustomerId = val),
+            ),
+            _buildTextFormField(
+              label: 'Full name *',
+              controller: _clientNameController,
+              validator: _validateRequiredField,
+            ),
+            _buildTextFormField(
+              label: 'Email address',
+              controller: _clientEmailController,
+              keyboardType: TextInputType.emailAddress,
+            ),
+            _buildTextFormField(
+              label: 'Contact number',
+              controller: _clientPhoneController,
+              keyboardType: TextInputType.phone,
+            ),
+
+            const SizedBox(height: _kSpacing * 1.5),
+
+            // Price & Distance Row
+            Row(
+              children: [
                 Expanded(
                   child: _buildTextFormField(
                     label: 'Distancia (km)',
@@ -304,13 +384,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   ),
                 ),
               ],
-            ),
-
-            // Client Info
-            _buildTextFormField(
-              label: 'Nombre del Cliente *',
-              controller: _clientNameController,
-              validator: _validateRequiredField,
             ),
 
             // Date & Time Picker
@@ -346,6 +419,20 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               controller: _notesController,
               maxLines: 3,
             ),
+
+            const SizedBox(height: _kSpacing * 1.5),
+
+            // Payment & Fare Section
+            _buildSectionHeader('Payment & Fare'),
+            const SizedBox(height: _kSpacing),
+            _buildPaymentMethodSelection(),
+            const SizedBox(height: _kSpacing),
+            // Card details (only shown when card is selected)
+            if (_selectedPaymentMethod == 'card') ...[
+              _buildCardDetailsSection(),
+              const SizedBox(height: _kSpacing),
+            ],
+            _buildFareDisplay(),
 
             // Action Buttons
             const SizedBox(height: _kSpacing * 1.5),
@@ -532,6 +619,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     bool isNumeric = false,
     bool readOnly = false,
     int maxLines = 1,
+    int? maxLength,
+    TextInputType? keyboardType,
+    List<TextInputFormatter>? inputFormatters,
     String? Function(String?)? validator,
   }) {
     return Padding(
@@ -539,10 +629,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       child: TextFormField(
         controller: controller,
         readOnly: readOnly,
-        keyboardType: isNumeric
-            ? const TextInputType.numberWithOptions(decimal: true)
-            : TextInputType.text,
+        keyboardType:
+            keyboardType ??
+            (isNumeric ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text),
         maxLines: maxLines,
+        maxLength: maxLength,
+        inputFormatters: inputFormatters,
         decoration: InputDecoration(
           labelText: label,
           border: const OutlineInputBorder(),
@@ -591,7 +683,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   Widget _buildDropdownFormField({
     required String label,
     required String? value,
-    required List<String> items,
+    required List<dynamic> items,
     required ValueChanged<String?> onChanged,
   }) {
     return Padding(
@@ -602,13 +694,246 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           border: const OutlineInputBorder(),
           contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         ),
-        initialValue: items.contains(value) ? value : null,
+        initialValue: value,
         hint: const Text('Seleccione una opción'),
-        items: items
-            .map((String item) => DropdownMenuItem<String>(value: item, child: Text(item)))
-            .toList(),
+        items: items.map<DropdownMenuItem<String>>((item) {
+          if (item is DropdownMenuItem<String?>) {
+            return DropdownMenuItem<String>(value: item.value, child: item.child);
+          } else if (item is String) {
+            return DropdownMenuItem<String>(value: item, child: Text(item));
+          }
+          return DropdownMenuItem<String>(value: item.toString(), child: Text(item.toString()));
+        }).toList(),
         onChanged: onChanged,
         isExpanded: true,
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(
+        title,
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: _kTextColor),
+      ),
+    );
+  }
+
+  Widget _buildVehicleSelection() {
+    final vehicles = [
+      {'type': 'sedan', 'name': 'Sedan', 'passengers': 3, 'handLuggage': 1, 'checkInLuggage': 0},
+      {'type': 'suv', 'name': 'SUV', 'passengers': 6, 'handLuggage': 2, 'checkInLuggage': 2},
+      {'type': 'van', 'name': 'Van', 'passengers': 8, 'handLuggage': 3, 'checkInLuggage': 4},
+      {'type': 'luxury', 'name': 'Luxury', 'passengers': 3, 'handLuggage': 2, 'checkInLuggage': 1},
+    ];
+
+    final selectedVehicle = vehicles.firstWhere(
+      (v) => v['type'] == _selectedVehicleType,
+      orElse: () => vehicles[0],
+    );
+
+    return Container(
+      padding: const EdgeInsets.all(_kSpacing),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(_kBorderRadius),
+      ),
+      child: Row(
+        children: [
+          const Text('Vehicle:-', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          const SizedBox(width: 12),
+          // Vehicle icon placeholder
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.directions_car, size: 24),
+          ),
+          const SizedBox(width: 12),
+          // Selected vehicle info
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: _kPrimaryColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: _kPrimaryColor),
+              ),
+              child: Row(
+                children: [
+                  Text(
+                    selectedVehicle['name'] as String,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(width: 12),
+                  Row(
+                    children: [
+                      const Icon(Icons.people, size: 16),
+                      Text('${selectedVehicle['passengers']}'),
+                    ],
+                  ),
+                  const SizedBox(width: 8),
+                  Row(
+                    children: [
+                      const Icon(Icons.luggage, size: 16),
+                      Text('${selectedVehicle['handLuggage']}'),
+                    ],
+                  ),
+                  const SizedBox(width: 8),
+                  Row(
+                    children: [
+                      const Icon(Icons.luggage_outlined, size: 16),
+                      Text('${selectedVehicle['checkInLuggage']}'),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Vehicle type dropdown
+          SizedBox(
+            width: 120,
+            child: DropdownButtonFormField<String>(
+              initialValue: _selectedVehicleType,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              ),
+              items: vehicles
+                  .map(
+                    (v) => DropdownMenuItem<String>(
+                      value: v['type'] as String,
+                      child: Text(v['name'] as String),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (val) {
+                if (val != null) {
+                  setState(() {
+                    _selectedVehicleType = val;
+                    final vehicle = vehicles.firstWhere((v) => v['type'] == val);
+                    _passengerCount = vehicle['passengers'] as int;
+                    _handLuggage = vehicle['handLuggage'] as int;
+                    _checkInLuggage = vehicle['checkInLuggage'] as int;
+                  });
+                }
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPaymentMethodSelection() {
+    return SegmentedButton<String>(
+      segments: const [ButtonSegment<String>(value: 'card', label: Text('Card'))],
+      selected: {_selectedPaymentMethod},
+      onSelectionChanged: (Set<String> newSelection) {
+        setState(() {
+          _selectedPaymentMethod = newSelection.first;
+        });
+      },
+    );
+  }
+
+  Widget _buildCardDetailsSection() {
+    return Container(
+      padding: const EdgeInsets.all(_kSpacing),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade50,
+        borderRadius: BorderRadius.circular(_kBorderRadius),
+        border: Border.all(color: Colors.blue.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Card Details', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          const SizedBox(height: _kSpacing),
+          _buildTextFormField(
+            label: 'Card Number *',
+            controller: _cardNumberController,
+            keyboardType: TextInputType.number,
+            validator: _validateCardNumber,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(19),
+              _CardNumberFormatter(),
+            ],
+          ),
+          Row(
+            children: [
+              Expanded(
+                child: _buildTextFormField(
+                  label: 'Expiry (MM/YY) *',
+                  controller: _cardExpiryController,
+                  keyboardType: TextInputType.number,
+                  validator: _validateCardExpiry,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(4),
+                    _CardExpiryFormatter(),
+                  ],
+                ),
+              ),
+              const SizedBox(width: _kSpacing),
+              Expanded(
+                child: _buildTextFormField(
+                  label: 'CVV *',
+                  controller: _cardCvvController,
+                  keyboardType: TextInputType.number,
+                  validator: _validateCardCvv,
+                  maxLength: 4,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(4),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          _buildTextFormField(
+            label: 'Name on Card *',
+            controller: _cardNameController,
+            validator: _validateRequiredField,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFareDisplay() {
+    return Container(
+      padding: const EdgeInsets.all(_kSpacing),
+      decoration: BoxDecoration(
+        color: Colors.green.shade50,
+        borderRadius: BorderRadius.circular(_kBorderRadius),
+        border: Border.all(color: Colors.green.shade200),
+      ),
+      child: Row(
+        children: [
+          const Text('Journey Fare', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          const Spacer(),
+          SizedBox(
+            width: 150,
+            child: TextFormField(
+              controller: _priceController,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              validator: _validatePrice,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                suffixText: 'USD',
+                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              ),
+              onChanged: (value) => setState(() {}),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -640,17 +965,32 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   }
 
   void _handleCancel() {
-    // Clear form
+    // Clear all form fields
     _originController.clear();
     _destinationController.clear();
     _priceController.clear();
     _distanceController.clear();
     _clientNameController.clear();
+    _clientEmailController.clear();
+    _clientPhoneController.clear();
     _dateController.clear();
     _timeController.clear();
     _notesController.clear();
+    _cardNumberController.clear();
+    _cardExpiryController.clear();
+    _cardCvvController.clear();
+    _cardNameController.clear();
+
+    // Reset form state
     setState(() {
       _selectedPriority = 'normal';
+      _selectedVehicleType = 'sedan';
+      _selectedPaymentMethod = 'card';
+      _passengerCount = 1;
+      _childSeats = 0;
+      _handLuggage = 0;
+      _checkInLuggage = 0;
+      _selectedCustomerId = null;
       _originCoords = null;
       _destinationCoords = null;
       _originMarker = null;
@@ -658,9 +998,51 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       _routePolyline = null;
       _autocompleteResults = [];
     });
+
+    // Reset map to current location
+    if (_currentLocation != null) {
+      _mapController.move(_currentLocation!, 13.0);
+    }
   }
 
   Future<void> _handleCreateRide() async {
+    // Validate card fields if payment method is card
+    if (_selectedPaymentMethod == 'card') {
+      if (_cardNumberController.text.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Por favor ingrese el número de tarjeta'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+      if (_cardExpiryController.text.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Por favor ingrese la fecha de expiración'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+      if (_cardCvvController.text.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Por favor ingrese el CVV'), backgroundColor: Colors.red),
+        );
+        return;
+      }
+      if (_cardNameController.text.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Por favor ingrese el nombre en la tarjeta'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+    }
+
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -730,7 +1112,35 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         'client_name': clientName,
         'priority': _selectedPriority.toLowerCase(),
         'created_at': DateTime.now().toIso8601String(),
+        // Vehicle details
+        'vehicle_type': _selectedVehicleType,
+        'passenger_count': _passengerCount,
+        'child_seats': _childSeats,
+        'hand_luggage': _handLuggage,
+        'check_in_luggage': _checkInLuggage,
+        // Payment method
+        'payment_method': _selectedPaymentMethod,
+        // Additional passenger details
+        'client_email': _clientEmailController.text.trim().isNotEmpty
+            ? _clientEmailController.text.trim()
+            : null,
+        'client_phone': _clientPhoneController.text.trim().isNotEmpty
+            ? _clientPhoneController.text.trim()
+            : null,
       };
+
+      // Add card details if payment method is card
+      if (_selectedPaymentMethod == 'card') {
+        final cardNumber = _cardNumberController.text.trim().replaceAll(RegExp(r'[\s-]'), '');
+        rideData['card_details'] = {
+          'card_number_last4': cardNumber.length >= 4
+              ? cardNumber.substring(cardNumber.length - 4)
+              : null,
+          'card_expiry': _cardExpiryController.text.trim(),
+          'card_name': _cardNameController.text.trim(),
+          // Note: CVV should never be stored for security reasons
+        };
+      }
 
       // Add optional fields
       if (distance != null && distance > 0) {
@@ -810,6 +1220,51 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     }
     if (double.tryParse(value) == null) {
       return 'Por favor ingrese un número válido';
+    }
+    return null;
+  }
+
+  String? _validateCardNumber(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'El número de tarjeta es requerido';
+    }
+    // Remove spaces and dashes
+    final cleaned = value.replaceAll(RegExp(r'[\s-]'), '');
+    if (cleaned.length < 13 || cleaned.length > 19) {
+      return 'Número de tarjeta inválido';
+    }
+    if (!RegExp(r'^\d+$').hasMatch(cleaned)) {
+      return 'Solo se permiten números';
+    }
+    return null;
+  }
+
+  String? _validateCardExpiry(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'La fecha de expiración es requerida';
+    }
+    // Format: MM/YY
+    if (!RegExp(r'^\d{2}/\d{2}$').hasMatch(value)) {
+      return 'Formato: MM/YY';
+    }
+    final parts = value.split('/');
+    final month = int.tryParse(parts[0]);
+    final year = int.tryParse(parts[1]);
+    if (month == null || year == null || month < 1 || month > 12) {
+      return 'Fecha inválida';
+    }
+    return null;
+  }
+
+  String? _validateCardCvv(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'El CVV es requerido';
+    }
+    if (value.length < 3 || value.length > 4) {
+      return 'CVV debe tener 3 o 4 dígitos';
+    }
+    if (!RegExp(r'^\d+$').hasMatch(value)) {
+      return 'Solo se permiten números';
     }
     return null;
   }
@@ -1095,5 +1550,61 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         debugPrint('Error calculando ruta: $e');
       }
     }
+  }
+}
+
+// Custom formatters for card input
+class _CardNumberFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    final text = newValue.text;
+    if (text.isEmpty) {
+      return newValue;
+    }
+
+    // Remove all non-digits
+    final digitsOnly = text.replaceAll(RegExp(r'[^\d]'), '');
+
+    // Add space every 4 digits
+    final buffer = StringBuffer();
+    for (int i = 0; i < digitsOnly.length; i++) {
+      if (i > 0 && i % 4 == 0) {
+        buffer.write(' ');
+      }
+      buffer.write(digitsOnly[i]);
+    }
+
+    final formatted = buffer.toString();
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+  }
+}
+
+class _CardExpiryFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    final text = newValue.text;
+    if (text.isEmpty) {
+      return newValue;
+    }
+
+    // Remove all non-digits
+    final digitsOnly = text.replaceAll(RegExp(r'[^\d]'), '');
+
+    // Limit to 4 digits
+    final limited = digitsOnly.length > 4 ? digitsOnly.substring(0, 4) : digitsOnly;
+
+    // Format as MM/YY
+    String formatted = limited;
+    if (limited.length >= 2) {
+      formatted = '${limited.substring(0, 2)}/${limited.substring(2)}';
+    }
+
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
   }
 }

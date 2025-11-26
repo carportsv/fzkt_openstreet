@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
+import '../../../auth/supabase_service.dart';
 
 class BookingsNewScreen extends StatefulWidget {
   const BookingsNewScreen({super.key});
@@ -9,12 +11,65 @@ class BookingsNewScreen extends StatefulWidget {
 }
 
 class _BookingsNewScreenState extends State<BookingsNewScreen> {
-  // ignore: unused_field
-  String _searchTerm = ''; // Se usará cuando se implemente la funcionalidad de búsqueda
+  final SupabaseService _supabaseService = SupabaseService();
+  String _searchTerm = '';
   int _recordsPerPage = 10;
   String? _selectedDate;
   String? _selectedCustomer;
   String? _selectedDriver;
+
+  List<Map<String, dynamic>> _rides = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNewRides();
+  }
+
+  Future<void> _loadNewRides() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final supabaseClient = _supabaseService.client;
+      final now = DateTime.now();
+      final startOfDay = DateTime(now.year, now.month, now.day);
+
+      // Cargar viajes con status 'requested' creados hoy
+      final queryBuilder = supabaseClient
+          .from('ride_requests')
+          .select('''
+            *,
+            user:users(id, email, display_name, phone_number)
+          ''')
+          .eq('status', 'requested')
+          .gte('created_at', startOfDay.toIso8601String())
+          .order('created_at', ascending: false);
+
+      final response = await queryBuilder;
+
+      if (mounted) {
+        setState(() {
+          _rides = List<Map<String, dynamic>>.from(response);
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error cargando viajes nuevos: $e');
+      }
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Error al cargar viajes: ${e.toString()}';
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,10 +96,19 @@ class _BookingsNewScreenState extends State<BookingsNewScreen> {
                       fontSize: isTablet ? null : 20,
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.keyboard),
-                    onPressed: () {},
-                    tooltip: 'Keyboard shortcuts',
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.refresh),
+                        onPressed: _loadNewRides,
+                        tooltip: 'Refresh',
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.keyboard),
+                        onPressed: () {},
+                        tooltip: 'Keyboard shortcuts',
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -153,6 +217,7 @@ class _BookingsNewScreenState extends State<BookingsNewScreen> {
           );
           if (date != null) {
             setState(() => _selectedDate = DateFormat('yyyy-MM-dd').format(date));
+            _loadNewRides();
           }
         },
       ),
@@ -224,7 +289,9 @@ class _BookingsNewScreenState extends State<BookingsNewScreen> {
           contentPadding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 12.0),
           suffixIcon: Icon(Icons.search),
         ),
-        onChanged: (value) => setState(() => _searchTerm = value.toLowerCase()),
+        onChanged: (value) {
+          setState(() => _searchTerm = value.toLowerCase());
+        },
       ),
     );
   }
@@ -291,12 +358,287 @@ class _BookingsNewScreenState extends State<BookingsNewScreen> {
   }
 
   Widget _buildTableContent() {
-    // all: Implementar carga de datos desde Supabase
+    if (_isLoading) {
+      return const SizedBox(height: 200, child: Center(child: CircularProgressIndicator()));
+    }
+
+    if (_errorMessage != null) {
+      return SizedBox(
+        height: 200,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, color: Colors.red, size: 48),
+              const SizedBox(height: 16),
+              Text(
+                _errorMessage!,
+                style: const TextStyle(color: Colors.red),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(onPressed: _loadNewRides, child: const Text('Reintentar')),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Filtrar por búsqueda
+    final filteredRides = _rides.where((ride) {
+      if (_searchTerm.isEmpty) return true;
+
+      final origin = (ride['origin'] as Map?)?['address']?.toString().toLowerCase() ?? '';
+      final destination = (ride['destination'] as Map?)?['address']?.toString().toLowerCase() ?? '';
+      final clientName = ride['client_name']?.toString().toLowerCase() ?? '';
+      final userEmail = (ride['user'] as Map?)?['email']?.toString().toLowerCase() ?? '';
+
+      return origin.contains(_searchTerm) ||
+          destination.contains(_searchTerm) ||
+          clientName.contains(_searchTerm) ||
+          userEmail.contains(_searchTerm);
+    }).toList();
+
+    if (filteredRides.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(32.0),
+        child: const Center(
+          child: Text('No Records', style: TextStyle(color: Colors.grey, fontSize: 16)),
+        ),
+      );
+    }
+
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 900;
+
+    if (isTablet) {
+      return ListView.builder(
+        shrinkWrap: true,
+        itemCount: filteredRides.length,
+        itemBuilder: (context, index) {
+          final ride = filteredRides[index];
+          return _buildTableRow(ride, isTablet);
+        },
+      );
+    } else {
+      return ListView.builder(
+        shrinkWrap: true,
+        itemCount: filteredRides.length,
+        itemBuilder: (context, index) {
+          final ride = filteredRides[index];
+          return _buildMobileCard(ride);
+        },
+      );
+    }
+  }
+
+  Widget _buildTableRow(Map<String, dynamic> ride, bool isTablet) {
+    final origin = (ride['origin'] as Map?)?['address'] ?? 'N/A';
+    final destination = (ride['destination'] as Map?)?['address'] ?? 'N/A';
+    final clientName = ride['client_name'] ?? 'N/A';
+    final price = ride['price'] ?? 0.0;
+    final createdAt = ride['created_at'] != null
+        ? DateTime.parse(ride['created_at'])
+        : DateTime.now();
+
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(32.0),
-      child: const Center(
-        child: Text('No Records', style: TextStyle(color: Colors.grey, fontSize: 16)),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 1,
+            child: Text(
+              ride['id']?.toString().substring(0, 8) ?? 'N/A',
+              style: const TextStyle(fontSize: 12),
+            ),
+          ),
+          Expanded(
+            flex: 1,
+            child: Text(
+              clientName.toString(),
+              style: const TextStyle(fontSize: 12),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          Expanded(
+            flex: 1,
+            child: Text(
+              DateFormat('MM/dd HH:mm').format(createdAt),
+              style: const TextStyle(fontSize: 12),
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: Text(
+              origin.toString(),
+              style: const TextStyle(fontSize: 12),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: Text(
+              destination.toString(),
+              style: const TextStyle(fontSize: 12),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          Expanded(flex: 1, child: Text('N/A', style: const TextStyle(fontSize: 12))),
+          Expanded(flex: 1, child: Text('Cash', style: const TextStyle(fontSize: 12))),
+          Expanded(
+            flex: 1,
+            child: Text(
+              '\$${price.toStringAsFixed(2)}',
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+          ),
+          Expanded(
+            flex: 1,
+            child: Text(
+              ride['driver_id'] != null ? 'Assigned' : 'Unassigned',
+              style: TextStyle(
+                fontSize: 12,
+                color: ride['driver_id'] != null ? Colors.green.shade700 : Colors.orange.shade700,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 1,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade100,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                'New',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.blue.shade700,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMobileCard(Map<String, dynamic> ride) {
+    final origin = (ride['origin'] as Map?)?['address'] ?? 'N/A';
+    final destination = (ride['destination'] as Map?)?['address'] ?? 'N/A';
+    final clientName = ride['client_name'] ?? 'N/A';
+    final price = ride['price'] ?? 0.0;
+    final createdAt = ride['created_at'] != null
+        ? DateTime.parse(ride['created_at'])
+        : DateTime.now();
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Order: ${ride['id']?.toString().substring(0, 8) ?? 'N/A'}',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              ),
+              Text(
+                '\$${price.toStringAsFixed(2)}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Color(0xFF1D4ED8),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text('Passenger: $clientName', style: const TextStyle(fontSize: 12)),
+          const SizedBox(height: 4),
+          Text(
+            'Date: ${DateFormat('MM/dd/yyyy HH:mm').format(createdAt)}',
+            style: const TextStyle(fontSize: 12),
+          ),
+          const SizedBox(height: 8),
+          const Divider(),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Icon(Icons.location_on, size: 16, color: Colors.green),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  origin.toString(),
+                  style: const TextStyle(fontSize: 12),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              const Icon(Icons.location_on, size: 16, color: Colors.red),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  destination.toString(),
+                  style: const TextStyle(fontSize: 12),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: ride['driver_id'] != null ? Colors.green.shade100 : Colors.orange.shade100,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  ride['driver_id'] != null ? 'Assigned' : 'Unassigned',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: ride['driver_id'] != null
+                        ? Colors.green.shade700
+                        : Colors.orange.shade700,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade100,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Text(
+                  'New',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blue),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

@@ -99,3 +99,7 @@ flutter_*.log
 # OS
 .DS_Store
 Thumbs.db
+
+# Backups locales (no subir a git)
+backups/
+temp_backup.ps1

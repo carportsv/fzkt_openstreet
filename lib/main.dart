@@ -51,6 +51,17 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(debugShowCheckedModeBanner: false, home: const RouteHandler());
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: const RouteHandler(),
+      // Prevenir que Flutter intente manipular el historial automáticamente
+      // Esto evita el SecurityError cuando hay URLs con dobles barras
+      restorationScopeId: null,
+      // Usar un builder para capturar errores de routing
+      builder: (context, child) {
+        // Si hay un error, mostrar el widget hijo de todas formas
+        return child ?? const RouteHandler();
+      },
+    );
   }
 }
