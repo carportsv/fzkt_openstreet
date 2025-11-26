@@ -3,14 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'auth/firebase_options.dart';
-import 'auth/auth_gate.dart';
 import 'auth/supabase_service.dart';
+import 'router/route_handler.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Load environment variables
-  // En móvil, el .env debe estar en assets y listado en pubspec.yaml
+  // El .env siempre está en la raíz del proyecto
+  // En móvil, debe estar listado en pubspec.yaml bajo assets
   try {
     await dotenv.load(fileName: ".env");
     debugPrint('✅ .env cargado exitosamente');
@@ -50,6 +51,6 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(debugShowCheckedModeBanner: false, home: AuthGate());
+    return MaterialApp(debugShowCheckedModeBanner: false, home: const RouteHandler());
   }
 }

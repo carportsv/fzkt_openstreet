@@ -6,7 +6,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'firebase_options.dart';
 import 'user_service.dart';
-import 'routing_screen.dart';
+import '../screens/admin/admin_home_screen.dart';
+import '../screens/welcome/welcome_screen.dart';
 
 // Importar js_interop solo en web usando importación condicional
 import 'dart:js_interop' if (dart.library.io) 'dart:js_interop_stub.dart' as js_interop;
@@ -59,22 +60,46 @@ class _LoginScreenState extends State<LoginScreen> {
     super.initState();
     // Escuchar cambios de autenticación para navegar automáticamente
     // Esto es especialmente importante después de logout/login
-    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((User? user) {
+    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((User? user) async {
       if (user != null && mounted && !_isLoading) {
-        // Si hay un usuario y no estamos cargando, navegar automáticamente
+        // Si hay un usuario y no estamos cargando, verificar rol y navegar
         if (kDebugMode) {
           debugPrint(
-            '[LoginScreen] ✅ Usuario detectado en stream (${user.uid}), navegando a RoutingScreen',
+            '[LoginScreen] ✅ Usuario detectado en stream (${user.uid}), verificando rol...',
           );
         }
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (context) => const RoutingScreen()),
-              (route) => false,
-            );
+        try {
+          final role = await _userService
+              .getUserRole(user.uid)
+              .timeout(const Duration(seconds: 5), onTimeout: () => 'user');
+
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              // Solo admin puede acceder a pantallas protegidas
+              if (role == 'admin') {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => const AdminHomeScreen()),
+                  (route) => false,
+                );
+              } else {
+                // Usuario regular o driver: redirigir a /welcome
+                Navigator.of(
+                  context,
+                ).pushReplacement(MaterialPageRoute(builder: (context) => const WelcomeScreen()));
+              }
+            }
+          });
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('[LoginScreen] ⚠️ Error obteniendo rol en stream: $e');
           }
-        });
+          // En caso de error, redirigir a /welcome
+          if (mounted) {
+            Navigator.of(
+              context,
+            ).pushReplacement(MaterialPageRoute(builder: (context) => const WelcomeScreen()));
+          }
+        }
       }
     });
   }
@@ -210,13 +235,41 @@ class _LoginScreenState extends State<LoginScreen> {
       await _userService.syncUserWithSupabase();
       debugPrint('[LoginScreen] ✅ Sincronización completada');
 
-      // Navegar directamente después del login exitoso (como se hacía antes)
+      // Verificar rol y navegar internamente (solo admin puede acceder a pantallas protegidas)
       if (mounted) {
-        debugPrint('[LoginScreen] ✅ Login exitoso, navegando a RoutingScreen...');
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const RoutingScreen()),
-          (route) => false,
-        );
+        try {
+          final role = await _userService
+              .getUserRole(user.uid)
+              .timeout(const Duration(seconds: 5), onTimeout: () => 'user');
+
+          debugPrint('[LoginScreen] ✅ Rol obtenido: $role');
+
+          // Solo admin puede acceder a pantallas protegidas
+          if (role == 'admin') {
+            // Navegación interna a AdminHomeScreen (sin cambiar URL)
+            if (mounted) {
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => const AdminHomeScreen()),
+                (route) => false,
+              );
+            }
+          } else {
+            // Usuario regular o driver: redirigir a /welcome
+            if (mounted) {
+              Navigator.of(
+                context,
+              ).pushReplacement(MaterialPageRoute(builder: (context) => const WelcomeScreen()));
+            }
+          }
+        } catch (e) {
+          debugPrint('[LoginScreen] ⚠️ Error obteniendo rol: $e');
+          // En caso de error, redirigir a /welcome
+          if (mounted) {
+            Navigator.of(
+              context,
+            ).pushReplacement(MaterialPageRoute(builder: (context) => const WelcomeScreen()));
+          }
+        }
       }
     } catch (e, stackTrace) {
       debugPrint('[LoginScreen] ❌ ERROR: $e');

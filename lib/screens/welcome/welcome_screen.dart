@@ -4,13 +4,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart';
-import '../../auth/supabase_service.dart';
-import '../welcome/welcome_screen.dart';
+import '../../auth/login_screen.dart';
+import '../../auth/user_service.dart';
+import '../admin/admin_home_screen.dart';
 
 // Constants
 const _kPrimaryColor = Color(0xFF1D4ED8);
@@ -18,15 +18,15 @@ const _kTextColor = Color(0xFF1A202C);
 const _kSpacing = 16.0;
 const _kBorderRadius = 12.0;
 
-/// Pantalla principal del usuario para crear una nueva solicitud de viaje
-class UserHomeScreen extends StatefulWidget {
-  const UserHomeScreen({super.key});
+/// Pantalla pública para solicitar viajes sin autenticación
+class WelcomeScreen extends StatefulWidget {
+  const WelcomeScreen({super.key});
 
   @override
-  State<UserHomeScreen> createState() => _UserHomeScreenState();
+  State<WelcomeScreen> createState() => _WelcomeScreenState();
 }
 
-class _UserHomeScreenState extends State<UserHomeScreen> {
+class _WelcomeScreenState extends State<WelcomeScreen> {
   // Form Key
   final _formKey = GlobalKey<FormState>();
 
@@ -42,8 +42,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
 
   // Form State
   String _selectedPriority = 'normal';
-  bool _isLoading = false;
-  final SupabaseService _supabaseService = SupabaseService();
+  final bool _isLoading = false;
 
   // Map State
   final MapController _mapController = MapController();
@@ -60,25 +59,40 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
   bool _isLoadingLocation = false;
   Timer? _debounceTimer;
 
+  final UserService _userService = UserService();
+
   @override
   void initState() {
     super.initState();
-    _checkAuthentication();
     _getCurrentLocation();
-  }
+    // Escuchar cambios de autenticación
+    FirebaseAuth.instance.authStateChanges().listen((User? user) async {
+      if (user != null && mounted) {
+        // Si el usuario se autentica, verificar rol y navegar
+        try {
+          final role = await _userService
+              .getUserRole(user.uid)
+              .timeout(const Duration(seconds: 5), onTimeout: () => 'user');
 
-  void _checkAuthentication() {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null && mounted) {
-      // Si no está autenticado, redirigir a WelcomeScreen
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          Navigator.of(
-            context,
-          ).pushReplacement(MaterialPageRoute(builder: (context) => const WelcomeScreen()));
+          if (mounted) {
+            // Solo admin puede acceder a pantallas protegidas
+            if (role == 'admin') {
+              Navigator.of(
+                context,
+              ).pushReplacement(MaterialPageRoute(builder: (context) => const AdminHomeScreen()));
+            } else {
+              // Usuario regular o driver: quedarse en /welcome o redirigir
+              // No hacer nada, quedarse en WelcomeScreen
+            }
+          }
+        } catch (e) {
+          // Error al obtener rol, quedarse en WelcomeScreen
+          if (kDebugMode) {
+            debugPrint('Error obteniendo rol en WelcomeScreen: $e');
+          }
         }
-      });
-    }
+      }
+    });
   }
 
   Future<void> _getCurrentLocation() async {
@@ -163,83 +177,44 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
     super.dispose();
   }
 
-  // Handle logout with proper error handling
-  Future<void> _handleLogout(BuildContext context) async {
-    try {
-      debugPrint('[UserHomeScreen] Iniciando cierre de sesión...');
+  void _navigateToLogin() {
+    Navigator.of(context).push(MaterialPageRoute(builder: (context) => const LoginScreen()));
+  }
 
-      // 1. Cerrar sesión de Firebase primero
-      await FirebaseAuth.instance.signOut();
-      debugPrint('[UserHomeScreen] ✅ Sesión de Firebase cerrada');
-
-      // 2. Esperar un momento para que Firebase procese el logout
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      // 3. Cerrar sesión de Google Sign-In también
-      try {
-        final GoogleSignIn googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
-        await googleSignIn.signOut();
-        debugPrint('[UserHomeScreen] ✅ Sesión de Google Sign-In cerrada');
-      } catch (e) {
-        debugPrint('[UserHomeScreen] ⚠️ Error al cerrar sesión de Google: $e');
-        // Continuar aunque falle Google Sign-In
-      }
-
-      // 4. Esperar un momento adicional para asegurar que all se limpie
-      await Future.delayed(const Duration(milliseconds: 300));
-
-      // 5. Navegar a WelcomeScreen y limpiar el stack de navegación
-      if (context.mounted) {
-        debugPrint('[UserHomeScreen] 🚀 Navegando a WelcomeScreen...');
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const WelcomeScreen()),
-          (route) => false,
-        );
-      }
-    } catch (e) {
-      // Show error message if logout fails
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al cerrar sesión: ${e.toString()}'),
-            backgroundColor: Colors.red,
+  void _showAuthRequiredDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cuenta requerida'),
+        content: const Text(
+          'Necesitas crear una cuenta para solicitar viajes. ¿Deseas crear una cuenta ahora?',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancelar')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: _kPrimaryColor),
+            onPressed: () {
+              Navigator.of(context).pop();
+              _navigateToLogin();
+            },
+            child: const Text('Crear cuenta', style: TextStyle(color: Colors.white)),
           ),
-        );
-      }
-    }
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mi Cuenta'),
+        title: const Text('Solicitar Viaje'),
         backgroundColor: _kPrimaryColor,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.history),
-            tooltip: 'Historial de Viajes',
-            onPressed: () {
-              // all: Navegar a historial de viajes
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text('Historial de viajes (próximamente)')));
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.person),
-            tooltip: 'Mi Perfil',
-            onPressed: () {
-              // all: Navegar a perfil
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text('Mi perfil (próximamente)')));
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Cerrar Sesión',
-            onPressed: () => _handleLogout(context),
+          TextButton.icon(
+            onPressed: _navigateToLogin,
+            icon: const Icon(Icons.person_add, color: Colors.white),
+            label: const Text('Crear cuenta', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -477,7 +452,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
           TextFormField(
             controller: controller,
             focusNode: focusNode,
-            readOnly: _activeInputType != type, // Only allow input when this field is active
+            readOnly: _activeInputType != type,
             decoration: InputDecoration(
               labelText: label,
               border: const OutlineInputBorder(),
@@ -717,131 +692,48 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
       return;
     }
 
-    setState(() => _isLoading = true);
+    // Verificar autenticación antes de proceder
+    final firebaseUser = FirebaseAuth.instance.currentUser;
+    if (firebaseUser == null) {
+      _showAuthRequiredDialog();
+      return;
+    }
 
-    try {
-      // Get current Firebase user
-      final firebaseUser = FirebaseAuth.instance.currentUser;
-      if (firebaseUser == null) {
-        throw Exception('Usuario no autenticado');
-      }
+    // Si está autenticado, verificar rol y navegar
+    if (mounted) {
+      try {
+        final userService = UserService();
+        final role = await userService
+            .getUserRole(firebaseUser.uid)
+            .timeout(const Duration(seconds: 5), onTimeout: () => 'user');
 
-      // Get Supabase user ID from Firebase UID
-      final supabaseClient = _supabaseService.client;
-      final userResponse = await supabaseClient
-          .from('users')
-          .select('id')
-          .eq('firebase_uid', firebaseUser.uid)
-          .maybeSingle();
-
-      final userId = userResponse?['id'] as String?;
-      if (userId == null) {
-        throw Exception(
-          'Usuario no encontrado en Supabase. Por favor, sincronice su cuenta primero.',
-        );
-      }
-
-      // Parse form data
-      final originAddress = _originController.text.trim();
-      final destinationAddress = _destinationController.text.trim();
-      final price = double.tryParse(_priceController.text.trim());
-      final distance = double.tryParse(_distanceController.text.trim());
-      final clientName = _clientNameController.text.trim();
-      final notes = _notesController.text.trim();
-      final scheduledDate = _dateController.text.trim();
-      final scheduledTime = _timeController.text.trim();
-
-      // Validate required fields
-      if (originAddress.isEmpty ||
-          destinationAddress.isEmpty ||
-          price == null ||
-          clientName.isEmpty) {
-        throw Exception('Por favor complete alls los campos requeridos');
-      }
-
-      // Prepare ride data (similar to JavaScript version)
-      final rideData = <String, dynamic>{
-        'user_id': userId,
-        'origin': {
-          'address': originAddress,
-          'coordinates': {
-            'latitude': _originCoords?.latitude ?? 0.0,
-            'longitude': _originCoords?.longitude ?? 0.0,
-          },
-        },
-        'destination': {
-          'address': destinationAddress,
-          'coordinates': {
-            'latitude': _destinationCoords?.latitude ?? 0.0,
-            'longitude': _destinationCoords?.longitude ?? 0.0,
-          },
-        },
-        'status': 'requested',
-        'price': price,
-        'client_name': clientName,
-        'priority': _selectedPriority.toLowerCase(),
-        'created_at': DateTime.now().toIso8601String(),
-      };
-
-      // Add optional fields
-      if (distance != null && distance > 0) {
-        rideData['distance'] = distance * 1000; // Convert km to meters
-      }
-
-      if (notes.isNotEmpty) {
-        rideData['additional_notes'] = notes;
-      }
-
-      // Handle scheduled rides
-      if (scheduledDate.isNotEmpty && scheduledTime.isNotEmpty) {
-        try {
-          final scheduledDateTime = DateTime.parse('${scheduledDate}T$scheduledTime');
-          final now = DateTime.now();
-
-          if (scheduledDateTime.isAfter(now)) {
-            rideData['scheduled_at'] = scheduledDateTime.toIso8601String();
-            rideData['is_scheduled'] = true;
+        // Solo admin puede acceder a pantallas protegidas
+        if (mounted) {
+          if (role == 'admin') {
+            Navigator.of(
+              context,
+            ).pushReplacement(MaterialPageRoute(builder: (context) => const AdminHomeScreen()));
           } else {
-            throw Exception('La fecha y hora programadas deben ser en el futuro');
+            // Usuario regular: mostrar mensaje de que necesita ser admin
+            // O redirigir a /welcome
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Solo administradores pueden solicitar viajes desde aquí'),
+                backgroundColor: Colors.orange,
+              ),
+            );
           }
-        } catch (e) {
-          throw Exception('Formato de fecha u hora inválido');
         }
-      }
-
-      // Create ride in Supabase
-      if (kDebugMode) {
-        debugPrint('Creando viaje con datos: $rideData');
-      }
-
-      await supabaseClient.from('ride_requests').insert(rideData);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('¡Viaje solicitado exitosamente!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-
-        // Clear form
-        _handleCancel();
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('Error creando viaje: $e');
-      }
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al solicitar viaje: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
+      } catch (e) {
+        // Error al obtener rol
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error verificando permisos: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     }
   }
@@ -941,16 +833,13 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
 
   void _centerMapOnPoints() {
     if (_originCoords != null && _destinationCoords != null) {
-      // Calcular el centro entre ambos puntos
       final centerLat = (_originCoords!.latitude + _destinationCoords!.latitude) / 2;
       final centerLon = (_originCoords!.longitude + _destinationCoords!.longitude) / 2;
       final center = LatLng(centerLat, centerLon);
 
-      // Calcular la distancia entre los puntos para ajustar el zoom
       final distance = const Distance();
       final distanceInKm = distance.as(LengthUnit.Kilometer, _originCoords!, _destinationCoords!);
 
-      // Ajustar el zoom basado en la distancia
       double zoom;
       if (distanceInKm < 1) {
         zoom = 15.0;
@@ -964,7 +853,6 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
         zoom = 7.0;
       }
 
-      // Mover el mapa al centro con el zoom apropiado
       _mapController.move(center, zoom);
     } else if (_originCoords != null) {
       _mapController.move(_originCoords!, 15.0);
@@ -974,7 +862,6 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
   }
 
   Future<void> _onAddressInputChanged(String query, String type) async {
-    // Cancelar el timer anterior si existe
     _debounceTimer?.cancel();
 
     if (query.length < 2) {
@@ -990,7 +877,6 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
       _activeInputType = type;
     });
 
-    // Usar debounce para evitar demasiadas peticiones
     _debounceTimer = Timer(const Duration(milliseconds: 300), () async {
       try {
         final results = await _searchAddresses(query);
@@ -1014,7 +900,6 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
 
   Future<List<Map<String, dynamic>>> _searchAddresses(String query) async {
     try {
-      // Mejorar la búsqueda con más parámetros para obtener mejores resultados
       final uri = Uri.parse(
         'https://nominatim.openstreetmap.org/search?'
         'format=json&'
@@ -1042,7 +927,6 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
           return [];
         }
 
-        // Ordenar resultados: priorizar resultados con más información de dirección
         final results = data
             .map(
               (item) => {
@@ -1057,7 +941,6 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
             .where((item) => item['lat'] != 0.0 && item['lon'] != 0.0)
             .toList();
 
-        // Ordenar por importancia (mayor importancia primero)
         results.sort((a, b) {
           final importanceA = a['importance'] as double;
           final importanceB = b['importance'] as double;
@@ -1101,13 +984,11 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
 
     setState(() {
       _autocompleteResults = [];
-      _activeInputType = null; // Reset to make input readonly again
+      _activeInputType = null;
     });
 
-    // Calcular ruta y centrar mapa si ambos puntos están establecidos
     if (_originCoords != null && _destinationCoords != null) {
       _calculateRoute();
-      // El centrado ya se hace en _updateOriginMarker/_updateDestinationMarker
     }
   }
 
@@ -1136,8 +1017,6 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
     if (_originCoords == null || _destinationCoords == null) return;
 
     try {
-      // Use OpenRouteService or similar for routing
-      // For now, just draw a straight line
       setState(() {
         _routePolyline = Polyline(
           points: [_originCoords!, _destinationCoords!],
@@ -1146,13 +1025,11 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
         );
       });
 
-      // Calculate distance
       final distance = const Distance();
       final distanceInKm = distance.as(LengthUnit.Kilometer, _originCoords!, _destinationCoords!);
       _distanceController.text = distanceInKm.toStringAsFixed(2);
 
-      // Estimate price (simple calculation)
-      final estimatedPrice = distanceInKm * 0.5; // $0.50 per km
+      final estimatedPrice = distanceInKm * 0.5;
       if (_priceController.text.isEmpty) {
         _priceController.text = estimatedPrice.toStringAsFixed(2);
       }
