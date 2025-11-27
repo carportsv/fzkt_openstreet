@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'firebase_options.dart';
 import 'user_service.dart';
 import '../screens/admin/admin_home_screen.dart';
@@ -11,6 +12,12 @@ import '../screens/welcome/welcome_screen.dart';
 
 // Importar js_interop solo en web usando importación condicional
 import 'dart:js_interop' if (dart.library.io) 'dart:js_interop_stub.dart' as js_interop;
+
+// Constants
+const _kPrimaryColor = Color(0xFF1D4ED8);
+const _kTextColor = Color(0xFF1A202C);
+const _kSpacing = 16.0;
+const _kBorderRadius = 12.0;
 
 // Función top-level para JS interop (necesaria para usar @JS)
 @js_interop.JS('firebaseAuthSignInWithGoogle')
@@ -294,63 +301,113 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
+            colors: [_kPrimaryColor, _kPrimaryColor.withValues(alpha: 0.8)],
           ),
         ),
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            child: Card(
-              elevation: 8.0,
-              shadowColor: Colors.black.withValues(alpha: 0.3),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
-              child: Padding(
-                padding: const EdgeInsets.all(32.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      'cuzcatlansv.ride',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Inicia sesión para continuar',
-                      style: TextStyle(fontSize: 16, color: Colors.grey),
-                    ),
-                    const SizedBox(height: 40),
-                    _isLoading
-                        ? const CircularProgressIndicator()
-                        : ElevatedButton.icon(
-                            onPressed: _signInWithGoogle,
-                            icon: Image.asset('assets/images/google_sig.png', height: 24.0),
-                            label: const Text(
-                              'Iniciar sesión con Google',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF3B82F6),
-                              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12.0),
-                              ),
-                              elevation: 5,
-                              shadowColor: Colors.blue.withValues(alpha: 0.4),
-                            ),
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: _kSpacing * 2),
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: Card(
+                  elevation: 0,
+                  color: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(_kBorderRadius * 2),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(_kSpacing * 3),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Logo o ícono decorativo
+                        Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            color: _kPrimaryColor.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
                           ),
-                  ],
+                          child: Icon(Icons.local_taxi, size: 40, color: _kPrimaryColor),
+                        ),
+                        const SizedBox(height: _kSpacing * 2),
+
+                        // Título
+                        Text(
+                          'cuzcatlansv.ride',
+                          style: GoogleFonts.exo(
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                            color: _kTextColor,
+                            letterSpacing: -0.5,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: _kSpacing),
+
+                        // Subtítulo
+                        Text(
+                          'Inicia sesión para continuar',
+                          style: GoogleFonts.exo(
+                            fontSize: 16,
+                            color: Colors.grey.shade600,
+                            height: 1.5,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: _kSpacing * 3),
+
+                        // Botón de Google
+                        _isLoading
+                            ? Container(
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                child: const CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(_kPrimaryColor),
+                                ),
+                              )
+                            : SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton.icon(
+                                  onPressed: _signInWithGoogle,
+                                  icon: Image.asset(
+                                    'assets/images/google_sig.png',
+                                    height: 24,
+                                    width: 24,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Icon(Icons.login, color: Colors.white, size: 24);
+                                    },
+                                  ),
+                                  label: Text(
+                                    'Iniciar sesión con Google',
+                                    style: GoogleFonts.exo(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: _kPrimaryColor,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 18,
+                                      horizontal: 24,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(_kBorderRadius),
+                                    ),
+                                    elevation: 3,
+                                    shadowColor: _kPrimaryColor.withValues(alpha: 0.4),
+                                  ),
+                                ),
+                              ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),

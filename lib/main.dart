@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'auth/firebase_options.dart';
@@ -57,6 +58,17 @@ class MyApp extends StatelessWidget {
       // Prevenir que Flutter intente manipular el historial automáticamente
       // Esto evita el SecurityError cuando hay URLs con dobles barras
       restorationScopeId: null,
+      // Localizaciones para DatePicker y otros widgets de Material
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('en', 'US'), // Inglés
+        Locale('es', 'ES'), // Español
+      ],
+      locale: const Locale('es', 'ES'), // Idioma por defecto
       // Usar un builder para capturar errores de routing
       builder: (context, child) {
         // Si hay un error, mostrar el widget hijo de todas formas

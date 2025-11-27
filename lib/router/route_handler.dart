@@ -68,6 +68,7 @@ class RouteHandler extends StatelessWidget {
           debugPrint('[RouteHandler] hasWelcomeInUrl: $hasWelcomeInUrl');
         }
 
+        // Mostrar WelcomeScreen SOLO si es específicamente /welcome
         if (isWelcomePath || isWelcomeFragment || hasWelcomeInUrl) {
           if (kDebugMode) {
             debugPrint('[RouteHandler] Showing WelcomeScreen');
@@ -75,7 +76,7 @@ class RouteHandler extends StatelessWidget {
           return const WelcomeScreen();
         }
 
-        // Para cualquier otra ruta (incluyendo /), mostrar AuthGate
+        // Para cualquier otra ruta, mostrar AuthGate
         if (kDebugMode) {
           debugPrint('[RouteHandler] Showing AuthGate');
         }
