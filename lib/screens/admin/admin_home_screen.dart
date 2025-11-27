@@ -30,6 +30,8 @@ import 'pricing/discounts_date_screen.dart';
 import 'pricing/discounts_surcharge_location_screen.dart';
 import 'pricing/vouchers_screen.dart';
 import '../../auth/login_screen.dart';
+import '../../auth/supabase_service.dart';
+import 'package:flutter/foundation.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
@@ -41,8 +43,113 @@ class AdminHomeScreen extends StatefulWidget {
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
   bool _isDrawerExpanded = true;
   Widget _selectedContent = const _HomeDashboardContent();
+  final SupabaseService _supabaseService = SupabaseService();
+
+  // Contadores de bookings
+  int _bookingsNewCount = 0;
+  int _bookingsPendingCount = 0;
+  int _bookingsFutureCount = 0;
+  int _bookingsAssignedCount = 0;
+  int _bookingsAcceptedCount = 0;
+  int _bookingsCompletedCount = 0;
+  int _bookingsPaymentPendingCount = 0;
+  int _bookingsCancelledCount = 0;
+  int _bookingsRejectedCount = 0;
+  int _bookingsDeletedCount = 0;
+  int _bookingsAllCount = 0;
 
   void _toggleDrawer() => setState(() => _isDrawerExpanded = !_isDrawerExpanded);
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBookingCounts();
+  }
+
+  Future<void> _loadBookingCounts() async {
+    try {
+      final supabaseClient = _supabaseService.client;
+
+      // Contar bookings por status - usar select y contar la longitud
+      final startOfToday = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+
+      final newData = await supabaseClient
+          .from('ride_requests')
+          .select('id')
+          .eq('status', 'requested')
+          .gte('created_at', startOfToday.toIso8601String());
+
+      final pendingData = await supabaseClient
+          .from('ride_requests')
+          .select('id')
+          .eq('status', 'requested')
+          .isFilter('driver_id', null);
+
+      final futureData = await supabaseClient
+          .from('ride_requests')
+          .select('id')
+          .eq('is_scheduled', true);
+
+      final assignedData = await supabaseClient
+          .from('ride_requests')
+          .select('id')
+          .or('status.eq.accepted,status.eq.assigned')
+          .not('driver_id', 'is', null);
+
+      final acceptedData = await supabaseClient
+          .from('ride_requests')
+          .select('id')
+          .eq('status', 'accepted');
+
+      final completedData = await supabaseClient
+          .from('ride_requests')
+          .select('id')
+          .eq('status', 'completed');
+
+      final paymentPendingData = await supabaseClient
+          .from('ride_requests')
+          .select('id')
+          .eq('status', 'completed')
+          .or('payment_method.eq.card,payment_method.eq.transfer');
+
+      final cancelledData = await supabaseClient
+          .from('ride_requests')
+          .select('id')
+          .eq('status', 'cancelled');
+
+      final rejectedData = await supabaseClient
+          .from('ride_requests')
+          .select('id')
+          .eq('status', 'rejected');
+
+      final deletedData = await supabaseClient
+          .from('ride_requests')
+          .select('id')
+          .eq('status', 'deleted');
+
+      final allData = await supabaseClient.from('ride_requests').select('id');
+
+      if (mounted) {
+        setState(() {
+          _bookingsNewCount = (newData as List).length;
+          _bookingsPendingCount = (pendingData as List).length;
+          _bookingsFutureCount = (futureData as List).length;
+          _bookingsAssignedCount = (assignedData as List).length;
+          _bookingsAcceptedCount = (acceptedData as List).length;
+          _bookingsCompletedCount = (completedData as List).length;
+          _bookingsPaymentPendingCount = (paymentPendingData as List).length;
+          _bookingsCancelledCount = (cancelledData as List).length;
+          _bookingsRejectedCount = (rejectedData as List).length;
+          _bookingsDeletedCount = (deletedData as List).length;
+          _bookingsAllCount = (allData as List).length;
+        });
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error cargando contadores de bookings: $e');
+      }
+    }
+  }
 
   Future<void> _handleLogout() async {
     try {
@@ -222,6 +329,19 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             content: content,
             onSelectItem: _onSelectItem,
             onLogout: _handleLogout,
+            bookingCounts: {
+              'new': _bookingsNewCount,
+              'pending': _bookingsPendingCount,
+              'future': _bookingsFutureCount,
+              'assigned': _bookingsAssignedCount,
+              'accepted': _bookingsAcceptedCount,
+              'completed': _bookingsCompletedCount,
+              'payment_pending': _bookingsPaymentPendingCount,
+              'cancelled': _bookingsCancelledCount,
+              'rejected': _bookingsRejectedCount,
+              'deleted': _bookingsDeletedCount,
+              'all': _bookingsAllCount,
+            },
           ),
         ),
       );
@@ -404,57 +524,57 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   // vvvv 3. CONNECTED THE BUTTON ACTION vvvv
                   _buildBookingStatusMenuItem(
                     text: 'New',
-                    count: 0,
+                    count: _bookingsNewCount,
                     onTap: () => _onSelectItem('new_booking'),
                   ),
                   _buildBookingStatusMenuItem(
                     text: 'Pending',
-                    count: 0,
+                    count: _bookingsPendingCount,
                     onTap: () => _onSelectItem('bookings_pending'),
                   ),
                   _buildBookingStatusMenuItem(
                     text: 'Future',
-                    count: 0,
+                    count: _bookingsFutureCount,
                     onTap: () => _onSelectItem('bookings_future'),
                   ),
                   _buildBookingStatusMenuItem(
                     text: 'Assigned',
-                    count: 0,
+                    count: _bookingsAssignedCount,
                     onTap: () => _onSelectItem('bookings_assigned'),
                   ),
                   _buildBookingStatusMenuItem(
                     text: 'Accepted',
-                    count: 0,
+                    count: _bookingsAcceptedCount,
                     onTap: () => _onSelectItem('bookings_accepted'),
                   ),
                   _buildBookingStatusMenuItem(
                     text: 'Completed',
-                    count: 0,
+                    count: _bookingsCompletedCount,
                     onTap: () => _onSelectItem('bookings_completed'),
                   ),
                   _buildBookingStatusMenuItem(
                     text: 'Payment Pending',
-                    count: 0,
+                    count: _bookingsPaymentPendingCount,
                     onTap: () => _onSelectItem('bookings_payment_pending'),
                   ),
                   _buildBookingStatusMenuItem(
                     text: 'Cancelled',
-                    count: 0,
+                    count: _bookingsCancelledCount,
                     onTap: () => _onSelectItem('bookings_cancelled'),
                   ),
                   _buildBookingStatusMenuItem(
                     text: 'Rejected',
-                    count: 0,
+                    count: _bookingsRejectedCount,
                     onTap: () => _onSelectItem('bookings_rejected'),
                   ),
                   _buildBookingStatusMenuItem(
                     text: 'Deleted',
-                    count: 0,
+                    count: _bookingsDeletedCount,
                     onTap: () => _onSelectItem('bookings_deleted'),
                   ),
                   _buildBookingStatusMenuItem(
                     text: 'All',
-                    count: 1,
+                    count: _bookingsAllCount,
                     onTap: () => _onSelectItem('bookings_all'),
                   ),
                 ],
@@ -703,12 +823,14 @@ class _AdminScreenWrapper extends StatelessWidget {
   final Widget content;
   final Function(String) onSelectItem;
   final VoidCallback onLogout;
+  final Map<String, int> bookingCounts;
 
   const _AdminScreenWrapper({
     required this.title,
     required this.content,
     required this.onSelectItem,
     required this.onLogout,
+    this.bookingCounts = const {},
   });
 
   Widget _buildAdminDrawer({required bool isExpanded, required BuildContext context}) {
@@ -763,7 +885,7 @@ class _AdminScreenWrapper extends StatelessWidget {
                 children: [
                   _buildBookingStatusMenuItem(
                     text: 'New',
-                    count: 0,
+                    count: bookingCounts['new'] ?? 0,
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
@@ -772,6 +894,7 @@ class _AdminScreenWrapper extends StatelessWidget {
                             content: const NewBookingScreen(),
                             onSelectItem: (key) {},
                             onLogout: onLogout,
+                            bookingCounts: bookingCounts,
                           ),
                         ),
                       );
@@ -780,7 +903,7 @@ class _AdminScreenWrapper extends StatelessWidget {
                   ),
                   _buildBookingStatusMenuItem(
                     text: 'Pending',
-                    count: 0,
+                    count: bookingCounts['pending'] ?? 0,
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
@@ -789,6 +912,7 @@ class _AdminScreenWrapper extends StatelessWidget {
                             content: const BookingsPendingScreen(),
                             onSelectItem: (key) {},
                             onLogout: onLogout,
+                            bookingCounts: bookingCounts,
                           ),
                         ),
                       );
@@ -797,7 +921,7 @@ class _AdminScreenWrapper extends StatelessWidget {
                   ),
                   _buildBookingStatusMenuItem(
                     text: 'Future',
-                    count: 0,
+                    count: bookingCounts['future'] ?? 0,
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
@@ -806,6 +930,7 @@ class _AdminScreenWrapper extends StatelessWidget {
                             content: const BookingsFutureScreen(),
                             onSelectItem: (key) {},
                             onLogout: onLogout,
+                            bookingCounts: bookingCounts,
                           ),
                         ),
                       );
@@ -814,7 +939,7 @@ class _AdminScreenWrapper extends StatelessWidget {
                   ),
                   _buildBookingStatusMenuItem(
                     text: 'Assigned',
-                    count: 0,
+                    count: bookingCounts['assigned'] ?? 0,
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
@@ -823,6 +948,7 @@ class _AdminScreenWrapper extends StatelessWidget {
                             content: const BookingsAssignedScreen(),
                             onSelectItem: (key) {},
                             onLogout: onLogout,
+                            bookingCounts: bookingCounts,
                           ),
                         ),
                       );
@@ -831,7 +957,7 @@ class _AdminScreenWrapper extends StatelessWidget {
                   ),
                   _buildBookingStatusMenuItem(
                     text: 'Accepted',
-                    count: 0,
+                    count: bookingCounts['accepted'] ?? 0,
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
@@ -840,6 +966,7 @@ class _AdminScreenWrapper extends StatelessWidget {
                             content: const BookingsAcceptedScreen(),
                             onSelectItem: (key) {},
                             onLogout: onLogout,
+                            bookingCounts: bookingCounts,
                           ),
                         ),
                       );
@@ -848,7 +975,7 @@ class _AdminScreenWrapper extends StatelessWidget {
                   ),
                   _buildBookingStatusMenuItem(
                     text: 'Completed',
-                    count: 0,
+                    count: bookingCounts['completed'] ?? 0,
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
@@ -857,6 +984,7 @@ class _AdminScreenWrapper extends StatelessWidget {
                             content: const BookingsCompletedScreen(),
                             onSelectItem: (key) {},
                             onLogout: onLogout,
+                            bookingCounts: bookingCounts,
                           ),
                         ),
                       );
@@ -865,7 +993,7 @@ class _AdminScreenWrapper extends StatelessWidget {
                   ),
                   _buildBookingStatusMenuItem(
                     text: 'Payment Pending',
-                    count: 0,
+                    count: bookingCounts['payment_pending'] ?? 0,
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
@@ -874,6 +1002,7 @@ class _AdminScreenWrapper extends StatelessWidget {
                             content: const BookingsPaymentPendingScreen(),
                             onSelectItem: (key) {},
                             onLogout: onLogout,
+                            bookingCounts: bookingCounts,
                           ),
                         ),
                       );
@@ -882,7 +1011,7 @@ class _AdminScreenWrapper extends StatelessWidget {
                   ),
                   _buildBookingStatusMenuItem(
                     text: 'Cancelled',
-                    count: 0,
+                    count: bookingCounts['cancelled'] ?? 0,
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
@@ -891,6 +1020,7 @@ class _AdminScreenWrapper extends StatelessWidget {
                             content: const BookingsCancelledScreen(),
                             onSelectItem: (key) {},
                             onLogout: onLogout,
+                            bookingCounts: bookingCounts,
                           ),
                         ),
                       );
@@ -899,7 +1029,7 @@ class _AdminScreenWrapper extends StatelessWidget {
                   ),
                   _buildBookingStatusMenuItem(
                     text: 'Rejected',
-                    count: 0,
+                    count: bookingCounts['rejected'] ?? 0,
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
@@ -908,6 +1038,7 @@ class _AdminScreenWrapper extends StatelessWidget {
                             content: const BookingsRejectedScreen(),
                             onSelectItem: (key) {},
                             onLogout: onLogout,
+                            bookingCounts: bookingCounts,
                           ),
                         ),
                       );
@@ -916,7 +1047,7 @@ class _AdminScreenWrapper extends StatelessWidget {
                   ),
                   _buildBookingStatusMenuItem(
                     text: 'Deleted',
-                    count: 0,
+                    count: bookingCounts['deleted'] ?? 0,
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
@@ -925,6 +1056,7 @@ class _AdminScreenWrapper extends StatelessWidget {
                             content: const BookingsDeletedScreen(),
                             onSelectItem: (key) {},
                             onLogout: onLogout,
+                            bookingCounts: bookingCounts,
                           ),
                         ),
                       );
@@ -933,7 +1065,7 @@ class _AdminScreenWrapper extends StatelessWidget {
                   ),
                   _buildBookingStatusMenuItem(
                     text: 'All',
-                    count: 1,
+                    count: bookingCounts['all'] ?? 0,
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(

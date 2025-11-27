@@ -87,11 +87,33 @@ class SupabaseService {
       }
 
       // Verificar si el usuario ya existe en Supabase por firebase_uid
-      final existingUserResponse = await supabaseClient
+      var existingUserResponse = await supabaseClient
           .from('users')
           .select('id, email, firebase_uid, role')
           .eq('firebase_uid', firebaseUser.uid)
           .maybeSingle();
+
+      // Si no existe por firebase_uid, buscar por email (si tiene email)
+      if (existingUserResponse == null &&
+          firebaseUser.email != null &&
+          firebaseUser.email!.isNotEmpty) {
+        if (kDebugMode) {
+          print(
+            '🔍 Usuario no encontrado por firebase_uid, buscando por email: ${firebaseUser.email}',
+          );
+        }
+        existingUserResponse = await supabaseClient
+            .from('users')
+            .select('id, email, firebase_uid, role')
+            .eq('email', firebaseUser.email!)
+            .maybeSingle();
+
+        if (existingUserResponse != null) {
+          if (kDebugMode) {
+            print('✅ Usuario encontrado por email, actualizando firebase_uid...');
+          }
+        }
+      }
 
       final userData = {
         'firebase_uid': firebaseUser.uid,
@@ -108,7 +130,8 @@ class SupabaseService {
           print('✅ Usuario existe en Supabase, actualizando...');
         }
 
-        await supabaseClient.from('users').update(userData).eq('firebase_uid', firebaseUser.uid);
+        // Si se encontró por email, actualizar también el firebase_uid
+        await supabaseClient.from('users').update(userData).eq('id', existingUserResponse['id']);
 
         if (kDebugMode) {
           print('✅ Usuario actualizado en Supabase');
@@ -127,12 +150,28 @@ class SupabaseService {
           'created_at': DateTime.now().toIso8601String(),
         };
 
-        await supabaseClient.from('users').insert(newUserData);
-
-        if (kDebugMode) {
-          print('✅ Nuevo usuario creado en Supabase');
+        try {
+          await supabaseClient.from('users').insert(newUserData);
+          if (kDebugMode) {
+            print('✅ Nuevo usuario creado en Supabase');
+          }
+          return true;
+        } catch (e) {
+          // Si hay error de duplicado (por email), intentar actualizar
+          if (e.toString().contains('duplicate') || e.toString().contains('23505')) {
+            if (kDebugMode) {
+              print('⚠️ Error de duplicado, intentando actualizar por email...');
+            }
+            if (firebaseUser.email != null && firebaseUser.email!.isNotEmpty) {
+              await supabaseClient.from('users').update(userData).eq('email', firebaseUser.email!);
+              if (kDebugMode) {
+                print('✅ Usuario actualizado después de error de duplicado');
+              }
+              return true;
+            }
+          }
+          rethrow;
         }
-        return true;
       }
     } catch (e) {
       if (kDebugMode) {
@@ -337,6 +376,39 @@ class SupabaseService {
         print('[SupabaseService] Error getting user by id: $e');
       }
       return null;
+    }
+  }
+
+  /// Sincronizar todos los usuarios de Firebase Auth a Supabase
+  /// NOTA: En Flutter, solo puede sincronizar el usuario actual
+  /// Para sincronizar todos los usuarios, se necesita un script del lado del servidor
+  /// con Firebase Admin SDK
+  Future<int> syncAllFirebaseUsers() async {
+    try {
+      if (kDebugMode) {
+        print('🔄 Iniciando sincronización de usuarios de Firebase...');
+      }
+
+      // En Flutter, solo podemos sincronizar el usuario actual
+      // Para sincronizar todos los usuarios, se necesita Firebase Admin SDK en un backend
+      final currentUser = firebase_auth.FirebaseAuth.instance.currentUser;
+      if (currentUser == null) {
+        if (kDebugMode) {
+          print('⚠️ No hay usuario autenticado actualmente');
+        }
+        return 0;
+      }
+
+      final synced = await syncUserWithSupabase(currentUser);
+      if (kDebugMode) {
+        print('✅ Usuario sincronizado: ${synced ? "Sí" : "No"}');
+      }
+      return synced ? 1 : 0;
+    } catch (e) {
+      if (kDebugMode) {
+        print('⚠️ Error sincronizando usuarios: $e');
+      }
+      return 0;
     }
   }
 }

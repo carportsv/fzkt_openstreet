@@ -72,7 +72,6 @@ class _RequestRideScreenState extends State<RequestRideScreen> {
   int _childSeats = 0;
   int _handLuggage = 0;
   int _checkInLuggage = 0;
-  String? _selectedCustomerId;
   bool _isLoading = false;
 
   // Map State
@@ -715,12 +714,6 @@ class _RequestRideScreenState extends State<RequestRideScreen> {
           // Passenger Details Section
           _buildSectionHeader('Passenger Details'),
           const SizedBox(height: _kSpacing),
-          _buildDropdownFormField(
-            label: 'Select Customer',
-            value: _selectedCustomerId,
-            items: const [DropdownMenuItem(value: null, child: Text('New Customer'))],
-            onChanged: (val) => setState(() => _selectedCustomerId = val),
-          ),
           _buildTextFormField(
             label: 'Full name *',
             controller: _clientNameController,
@@ -1677,7 +1670,6 @@ class _RequestRideScreenState extends State<RequestRideScreen> {
       _childSeats = 0;
       _handLuggage = 0;
       _checkInLuggage = 0;
-      _selectedCustomerId = null;
       _originCoords = null;
       _destinationCoords = null;
       _originMarker = null;
@@ -1796,18 +1788,14 @@ class _RequestRideScreenState extends State<RequestRideScreen> {
         },
         'status': 'requested',
         'price': price,
-        'client_name': clientName,
         'priority': _selectedPriority.toLowerCase(),
-        'created_at': DateTime.now().toIso8601String(),
-        // Vehicle details
         'vehicle_type': _selectedVehicleType,
         'passenger_count': _passengerCount,
         'child_seats': _childSeats,
         'hand_luggage': _handLuggage,
         'check_in_luggage': _checkInLuggage,
-        // Payment method
         'payment_method': _selectedPaymentMethod,
-        // Additional passenger details
+        'client_name': clientName,
         'client_email': _clientEmailController.text.trim().isNotEmpty
             ? _clientEmailController.text.trim()
             : null,
@@ -1816,24 +1804,12 @@ class _RequestRideScreenState extends State<RequestRideScreen> {
             : null,
       };
 
-      // Add card details if payment method is card
-      if (_selectedPaymentMethod == 'card') {
-        final cardNumber = _cardNumberController.text.trim().replaceAll(RegExp(r'[\s-]'), '');
-        rideData['card_details'] = {
-          'card_number_last4': cardNumber.length >= 4
-              ? cardNumber.substring(cardNumber.length - 4)
-              : null,
-          'card_expiry': _cardExpiryController.text.trim(),
-          'card_name': _cardNameController.text.trim(),
-          // Note: CVV should never be stored for security reasons
-        };
-      }
-
-      // Add optional fields
+      // Add optional distance field if available
       if (distance != null && distance > 0) {
         rideData['distance'] = distance * 1000; // Convert km to meters
       }
 
+      // Add notes if available
       if (notes.isNotEmpty) {
         rideData['additional_notes'] = notes;
       }
@@ -1853,6 +1829,17 @@ class _RequestRideScreenState extends State<RequestRideScreen> {
         } catch (e) {
           throw Exception('Formato de fecha u hora inválido');
         }
+      }
+
+      // Add card details if payment method is card (datos de prueba por ahora)
+      if (_selectedPaymentMethod == 'card') {
+        final cardNumber = _cardNumberController.text.trim().replaceAll(RegExp(r'[\s-]'), '');
+        rideData['card_number'] = cardNumber.length >= 4
+            ? cardNumber.substring(cardNumber.length - 4) // Solo últimos 4 dígitos por seguridad
+            : null;
+        rideData['card_expiry'] = _cardExpiryController.text.trim();
+        rideData['card_name'] = _cardNameController.text.trim();
+        // CVV no se guarda por seguridad
       }
 
       // Create ride in Supabase

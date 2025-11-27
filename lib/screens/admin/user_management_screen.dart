@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../auth/user_service.dart';
+import '../../auth/supabase_service.dart';
 
 class UserManagementScreen extends StatefulWidget {
   const UserManagementScreen({super.key});
@@ -11,6 +13,7 @@ class UserManagementScreen extends StatefulWidget {
 
 class _UserManagementScreenState extends State<UserManagementScreen> {
   final UserService _userService = UserService();
+  final SupabaseService _supabaseService = SupabaseService();
   String _searchTerm = '';
 
   @override
@@ -137,6 +140,17 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   ),
                   onChanged: (value) => setState(() => _searchTerm = value.toLowerCase()),
                 ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            ElevatedButton.icon(
+              onPressed: _showSyncUserDialog,
+              icon: const Icon(Icons.sync, size: 18),
+              label: const Text('Sincronizar Usuario'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1D4ED8),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
             ),
           ],
@@ -505,6 +519,119 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               _userService.deleteUser(userId);
               Navigator.of(context).pop();
             },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSyncUserDialog() {
+    final firebaseUidController = TextEditingController();
+    final emailController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Sincronizar Usuario de Firebase'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Ingresa el UID de Firebase del usuario que deseas sincronizar con Supabase.\n\n'
+                'Puedes encontrar el UID en Firebase Console > Authentication > Users.\n\n'
+                'NOTA: Solo puedes sincronizar el usuario actualmente autenticado. '
+                'Para sincronizar otros usuarios, usa el script SQL proporcionado.',
+                style: TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: firebaseUidController,
+                decoration: const InputDecoration(
+                  labelText: 'Firebase UID',
+                  hintText: 'Ej: o4orlaSxvqfp2NuUZxzQfkGaX...',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: emailController,
+                decoration: const InputDecoration(
+                  labelText: 'Email (opcional)',
+                  hintText: 'Ej: usuario@ejemplo.com',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.emailAddress,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancelar')),
+          ElevatedButton(
+            onPressed: () async {
+              final firebaseUid = firebaseUidController.text.trim();
+              if (firebaseUid.isEmpty) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Por favor ingresa el Firebase UID'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                }
+                return;
+              }
+
+              // Intentar obtener el usuario de Firebase
+              // NOTA: En Flutter no podemos obtener usuarios por UID directamente
+              // Solo podemos sincronizar el usuario actual
+              final currentUser = FirebaseAuth.instance.currentUser;
+              if (currentUser == null || currentUser.uid != firebaseUid) {
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'No se puede sincronizar este usuario.\n'
+                        'Solo puedes sincronizar el usuario actualmente autenticado.\n'
+                        'Para sincronizar otros usuarios, usa el script SQL en expo/database/sync-firebase-users-to-supabase.sql',
+                      ),
+                      backgroundColor: Colors.orange,
+                      duration: Duration(seconds: 6),
+                    ),
+                  );
+                }
+                return;
+              }
+
+              // Sincronizar usuario actual
+              try {
+                final success = await _supabaseService.syncUserWithSupabase(currentUser);
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        success
+                            ? 'Usuario sincronizado exitosamente'
+                            : 'Error al sincronizar usuario',
+                      ),
+                      backgroundColor: success ? Colors.green : Colors.red,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red),
+                  );
+                }
+              }
+            },
+            child: const Text('Sincronizar'),
           ),
         ],
       ),

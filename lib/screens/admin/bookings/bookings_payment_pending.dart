@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
+import '../../../auth/supabase_service.dart';
 
 class BookingsPaymentPendingScreen extends StatefulWidget {
   const BookingsPaymentPendingScreen({super.key});
@@ -9,12 +11,72 @@ class BookingsPaymentPendingScreen extends StatefulWidget {
 }
 
 class _BookingsPaymentPendingScreenState extends State<BookingsPaymentPendingScreen> {
-  // ignore: unused_field
-  String _searchTerm = ''; // Se usará cuando se implemente la funcionalidad de búsqueda
+  final SupabaseService _supabaseService = SupabaseService();
+  String _searchTerm = '';
   int _recordsPerPage = 10;
   String? _selectedDate;
   String? _selectedCustomer;
   String? _selectedDriver;
+
+  List<Map<String, dynamic>> _rides = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPaymentPendingRides();
+  }
+
+  Future<void> _loadPaymentPendingRides() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final supabaseClient = _supabaseService.client;
+
+      // Cargar viajes completados con método de pago que no sea cash (card o transfer)
+      var query = supabaseClient
+          .from('ride_requests')
+          .select('''
+            *,
+            user:users!ride_requests_user_id_fkey(id, email, display_name, phone_number)
+          ''')
+          .eq('status', 'completed')
+          .or('payment_method.eq.card,payment_method.eq.transfer');
+
+      // Aplicar filtros de fecha si existen
+      if (_selectedDate != null) {
+        final date = DateTime.parse(_selectedDate!);
+        final startOfDay = DateTime(date.year, date.month, date.day);
+        final endOfDay = startOfDay.add(const Duration(days: 1));
+        query = query
+            .gte('created_at', startOfDay.toIso8601String())
+            .lt('created_at', endOfDay.toIso8601String());
+      }
+
+      final response = await query.order('created_at', ascending: false);
+
+      if (mounted) {
+        setState(() {
+          _rides = List<Map<String, dynamic>>.from(response);
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error cargando viajes con pago pendiente: $e');
+      }
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Error al cargar viajes: ${e.toString()}';
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,10 +103,19 @@ class _BookingsPaymentPendingScreenState extends State<BookingsPaymentPendingScr
                       fontSize: isTablet ? null : 20,
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.keyboard),
-                    onPressed: () {},
-                    tooltip: 'Keyboard shortcuts',
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.refresh),
+                        onPressed: _loadPaymentPendingRides,
+                        tooltip: 'Refresh',
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.keyboard),
+                        onPressed: () {},
+                        tooltip: 'Keyboard shortcuts',
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -140,7 +211,10 @@ class _BookingsPaymentPendingScreenState extends State<BookingsPaymentPendingScr
           suffixIcon: _selectedDate != null
               ? IconButton(
                   icon: const Icon(Icons.close, size: 18),
-                  onPressed: () => setState(() => _selectedDate = null),
+                  onPressed: () {
+                    setState(() => _selectedDate = null);
+                    _loadPaymentPendingRides();
+                  },
                 )
               : const Icon(Icons.calendar_today, size: 18),
         ),
@@ -153,6 +227,7 @@ class _BookingsPaymentPendingScreenState extends State<BookingsPaymentPendingScr
           );
           if (date != null) {
             setState(() => _selectedDate = DateFormat('yyyy-MM-dd').format(date));
+            _loadPaymentPendingRides();
           }
         },
       ),
@@ -218,7 +293,9 @@ class _BookingsPaymentPendingScreenState extends State<BookingsPaymentPendingScr
           contentPadding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 12.0),
           suffixIcon: Icon(Icons.search),
         ),
-        onChanged: (value) => setState(() => _searchTerm = value.toLowerCase()),
+        onChanged: (value) {
+          setState(() => _searchTerm = value.toLowerCase());
+        },
       ),
     );
   }
@@ -284,11 +361,265 @@ class _BookingsPaymentPendingScreenState extends State<BookingsPaymentPendingScr
   }
 
   Widget _buildTableContent() {
+    if (_isLoading) {
+      return const SizedBox(height: 200, child: Center(child: CircularProgressIndicator()));
+    }
+
+    if (_errorMessage != null) {
+      return SizedBox(
+        height: 200,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, color: Colors.red, size: 48),
+              const SizedBox(height: 16),
+              Text(
+                _errorMessage!,
+                style: const TextStyle(color: Colors.red),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(onPressed: _loadPaymentPendingRides, child: const Text('Reintentar')),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Filtrar por búsqueda
+    final filteredRides = _rides.where((ride) {
+      if (_searchTerm.isEmpty) return true;
+
+      final origin = (ride['origin'] as Map?)?['address']?.toString().toLowerCase() ?? '';
+      final destination = (ride['destination'] as Map?)?['address']?.toString().toLowerCase() ?? '';
+      final clientName = ride['client_name']?.toString().toLowerCase() ?? '';
+      final userEmail = (ride['user'] as Map?)?['email']?.toString().toLowerCase() ?? '';
+
+      return origin.contains(_searchTerm) ||
+          destination.contains(_searchTerm) ||
+          clientName.contains(_searchTerm) ||
+          userEmail.contains(_searchTerm);
+    }).toList();
+
+    if (filteredRides.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(32.0),
+        child: const Center(
+          child: Text('No Records', style: TextStyle(color: Colors.grey, fontSize: 16)),
+        ),
+      );
+    }
+
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 900;
+
+    if (isTablet) {
+      return ListView.builder(
+        shrinkWrap: true,
+        itemCount: filteredRides.length,
+        itemBuilder: (context, index) {
+          final ride = filteredRides[index];
+          return _buildTableRow(ride, isTablet);
+        },
+      );
+    } else {
+      return ListView.builder(
+        shrinkWrap: true,
+        itemCount: filteredRides.length,
+        itemBuilder: (context, index) {
+          final ride = filteredRides[index];
+          return _buildMobileCard(ride);
+        },
+      );
+    }
+  }
+
+  Widget _buildTableRow(Map<String, dynamic> ride, bool isTablet) {
+    final origin = (ride['origin'] as Map?)?['address'] ?? 'N/A';
+    final destination = (ride['destination'] as Map?)?['address'] ?? 'N/A';
+    final clientName = ride['client_name'] ?? 'N/A';
+    final price = ride['price'] ?? 0.0;
+    final createdAt = ride['created_at'] != null
+        ? DateTime.parse(ride['created_at'])
+        : DateTime.now();
+    final paymentMethod = ride['payment_method']?.toString().toUpperCase() ?? 'N/A';
+    final driverId = ride['driver_id']?.toString() ?? 'N/A';
+
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(32.0),
-      child: const Center(
-        child: Text('No Records', style: TextStyle(color: Colors.grey, fontSize: 16)),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 1,
+            child: Text(
+              ride['id']?.toString().substring(0, 8) ?? 'N/A',
+              style: const TextStyle(fontSize: 12),
+            ),
+          ),
+          Expanded(
+            flex: 1,
+            child: Text(
+              clientName.toString(),
+              style: const TextStyle(fontSize: 12),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          Expanded(
+            flex: 1,
+            child: Text(
+              DateFormat('MM/dd HH:mm').format(createdAt),
+              style: const TextStyle(fontSize: 12),
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: Text(
+              origin.toString(),
+              style: const TextStyle(fontSize: 12),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: Text(
+              destination.toString(),
+              style: const TextStyle(fontSize: 12),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          Expanded(flex: 1, child: Text('N/A', style: const TextStyle(fontSize: 12))),
+          Expanded(
+            flex: 1,
+            child: Text(
+              paymentMethod,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.orange.shade700,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 1,
+            child: Text(
+              '\$${price.toStringAsFixed(2)}',
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+          ),
+          Expanded(
+            flex: 1,
+            child: Text(
+              driverId != 'N/A' ? driverId.substring(0, 8) : 'N/A',
+              style: const TextStyle(fontSize: 12),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMobileCard(Map<String, dynamic> ride) {
+    final origin = (ride['origin'] as Map?)?['address'] ?? 'N/A';
+    final destination = (ride['destination'] as Map?)?['address'] ?? 'N/A';
+    final clientName = ride['client_name'] ?? 'N/A';
+    final price = ride['price'] ?? 0.0;
+    final createdAt = ride['created_at'] != null
+        ? DateTime.parse(ride['created_at'])
+        : DateTime.now();
+    final paymentMethod = ride['payment_method']?.toString().toUpperCase() ?? 'N/A';
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Order: ${ride['id']?.toString().substring(0, 8) ?? 'N/A'}',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              ),
+              Text(
+                '\$${price.toStringAsFixed(2)}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Color(0xFF1D4ED8),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text('Passenger: $clientName', style: const TextStyle(fontSize: 12)),
+          const SizedBox(height: 4),
+          Text(
+            'Payment: $paymentMethod',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.orange.shade700,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Date: ${DateFormat('MM/dd/yyyy HH:mm').format(createdAt)}',
+            style: const TextStyle(fontSize: 12),
+          ),
+          const SizedBox(height: 8),
+          const Divider(),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Icon(Icons.location_on, size: 16, color: Colors.green),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  origin.toString(),
+                  style: const TextStyle(fontSize: 12),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              const Icon(Icons.location_on, size: 16, color: Colors.red),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  destination.toString(),
+                  style: const TextStyle(fontSize: 12),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.orange.shade100,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: const Text(
+              'PAYMENT PENDING',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.orange),
+            ),
+          ),
+        ],
       ),
     );
   }

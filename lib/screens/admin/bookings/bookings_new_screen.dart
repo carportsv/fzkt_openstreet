@@ -44,7 +44,7 @@ class _BookingsNewScreenState extends State<BookingsNewScreen> {
           .from('ride_requests')
           .select('''
             *,
-            user:users(id, email, display_name, phone_number)
+            user:users!ride_requests_user_id_fkey(id, email, display_name, phone_number)
           ''')
           .eq('status', 'requested')
           .gte('created_at', startOfDay.toIso8601String())

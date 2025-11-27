@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../auth/supabase_service.dart';
 
 class BookingsPendingScreen extends StatefulWidget {
@@ -42,7 +43,7 @@ class _BookingsPendingScreenState extends State<BookingsPendingScreen> {
           .from('ride_requests')
           .select('''
             *,
-            user:users(id, email, display_name, phone_number)
+            user:users!ride_requests_user_id_fkey(id, email, display_name, phone_number)
           ''')
           .eq('status', 'requested')
           .isFilter('driver_id', null);
@@ -509,14 +510,41 @@ class _BookingsPendingScreenState extends State<BookingsPendingScreen> {
           ),
           Expanded(
             flex: 1,
-            child: Text(
-              'Unassigned',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.orange.shade700,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            child: ride['driver_id'] == null
+                ? InkWell(
+                    onTap: () => _showAssignDriverDialog(ride),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade100,
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: Colors.orange.shade300),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.person_add, size: 14, color: Colors.orange.shade700),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Asignar',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.orange.shade700,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : Text(
+                    'Asignado',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.green.shade700,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
           ),
         ],
       ),
@@ -597,17 +625,48 @@ class _BookingsPendingScreenState extends State<BookingsPendingScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.orange.shade100,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: const Text(
-              'Unassigned',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.orange),
-            ),
-          ),
+          ride['driver_id'] == null
+              ? InkWell(
+                  onTap: () => _showAssignDriverDialog(ride),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade100,
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: Colors.orange.shade300),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.person_add, size: 14, color: Colors.orange.shade700),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Asignar Conductor',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade100,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    'Asignado',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green.shade700,
+                    ),
+                  ),
+                ),
         ],
       ),
     );
@@ -635,5 +694,318 @@ class _BookingsPendingScreenState extends State<BookingsPendingScreen> {
         ),
       ],
     );
+  }
+
+  Future<void> _showAssignDriverDialog(Map<String, dynamic> ride) async {
+    try {
+      // Cargar lista de drivers disponibles
+      final supabaseClient = _supabaseService.client;
+      final driversResponse = await supabaseClient
+          .from('drivers')
+          .select('id, user:users!drivers_user_id_fkey(id, display_name, email, phone_number)')
+          .eq('status', 'active');
+
+      final drivers = (driversResponse as List).cast<Map<String, dynamic>>();
+
+      if (drivers.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No hay conductores disponibles'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
+
+      if (!mounted) return;
+
+      await showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (context) {
+          String? selectedDriverId;
+
+          return StatefulBuilder(
+            builder: (dialogContext, setDialogState) {
+              return Dialog(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header con icono
+                      Row(
+                        children: [
+                          Container(
+                            width: 56,
+                            height: 56,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF1D4ED8), Color(0xFF3B82F6)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: const Icon(
+                              Icons.person_add_alt_1,
+                              color: Colors.white,
+                              size: 28,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Asignar Conductor',
+                                  style: GoogleFonts.exo(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFF1A202C),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Selecciona un conductor para este viaje',
+                                  style: GoogleFonts.exo(fontSize: 14, color: Colors.grey.shade600),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      // Lista de conductores
+                      Flexible(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: ListView.separated(
+                            shrinkWrap: true,
+                            itemCount: drivers.length,
+                            separatorBuilder: (context, index) => Divider(
+                              height: 1,
+                              color: Colors.grey.shade200,
+                              indent: 16,
+                              endIndent: 16,
+                            ),
+                            itemBuilder: (context, index) {
+                              final driver = drivers[index];
+                              final user = driver['user'] as Map<String, dynamic>?;
+                              final driverName =
+                                  user?['display_name'] ?? user?['email'] ?? 'Sin nombre';
+                              final driverEmail = user?['email'] ?? '';
+                              final driverId = driver['id'] as String;
+                              final isSelected = selectedDriverId == driverId;
+
+                              return InkWell(
+                                onTap: () {
+                                  setDialogState(() {
+                                    selectedDriverId = driverId;
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? const Color(0xFF1D4ED8).withValues(alpha: 0.1)
+                                        : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 40,
+                                        height: 40,
+                                        decoration: BoxDecoration(
+                                          gradient: isSelected
+                                              ? const LinearGradient(
+                                                  colors: [Color(0xFF1D4ED8), Color(0xFF3B82F6)],
+                                                )
+                                              : null,
+                                          color: isSelected ? null : Colors.grey.shade300,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: isSelected
+                                            ? const Icon(Icons.check, color: Colors.white, size: 20)
+                                            : Icon(
+                                                Icons.person,
+                                                color: Colors.grey.shade600,
+                                                size: 20,
+                                              ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              driverName,
+                                              style: GoogleFonts.exo(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w600,
+                                                color: isSelected
+                                                    ? const Color(0xFF1D4ED8)
+                                                    : const Color(0xFF1A202C),
+                                              ),
+                                            ),
+                                            if (driverEmail.isNotEmpty) ...[
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                driverEmail,
+                                                style: GoogleFonts.exo(
+                                                  fontSize: 12,
+                                                  color: Colors.grey.shade600,
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                      if (isSelected)
+                                        Icon(
+                                          Icons.radio_button_checked,
+                                          color: const Color(0xFF1D4ED8),
+                                          size: 24,
+                                        )
+                                      else
+                                        Icon(
+                                          Icons.radio_button_unchecked,
+                                          color: Colors.grey.shade400,
+                                          size: 24,
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      // Botones de acción
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          OutlinedButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                              side: BorderSide(color: Colors.grey.shade300, width: 1.5),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: Text(
+                              'Cancelar',
+                              style: GoogleFonts.exo(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey.shade700,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Builder(
+                            builder: (buttonContext) {
+                              return ElevatedButton(
+                                onPressed: selectedDriverId == null
+                                    ? null
+                                    : () async {
+                                        // Asignar driver al viaje
+                                        try {
+                                          await supabaseClient
+                                              .from('ride_requests')
+                                              .update({
+                                                'driver_id': selectedDriverId,
+                                                'status': 'assigned',
+                                              })
+                                              .eq('id', ride['id']);
+
+                                          if (!mounted) return;
+                                          if (!buttonContext.mounted) return;
+
+                                          Navigator.of(buttonContext).pop();
+                                          ScaffoldMessenger.of(buttonContext).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                'Conductor asignado exitosamente',
+                                                style: GoogleFonts.exo(),
+                                              ),
+                                              backgroundColor: Colors.green,
+                                              behavior: SnackBarBehavior.floating,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                            ),
+                                          );
+                                          // Recargar la lista
+                                          _loadPendingRides();
+                                        } catch (e) {
+                                          if (!mounted) return;
+                                          if (!buttonContext.mounted) return;
+
+                                          Navigator.of(buttonContext).pop();
+                                          ScaffoldMessenger.of(buttonContext).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                'Error al asignar conductor: ${e.toString()}',
+                                                style: GoogleFonts.exo(),
+                                              ),
+                                              backgroundColor: Colors.red,
+                                              behavior: SnackBarBehavior.floating,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                      },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF1D4ED8),
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  elevation: 0,
+                                ),
+                                child: Text(
+                                  'Asignar',
+                                  style: GoogleFonts.exo(fontSize: 16, fontWeight: FontWeight.bold),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al cargar conductores: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }
