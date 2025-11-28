@@ -31,6 +31,7 @@ import 'pricing/discounts_surcharge_location_screen.dart';
 import 'pricing/vouchers_screen.dart';
 import '../../auth/login_screen.dart';
 import '../../auth/supabase_service.dart';
+import '../../widgets/app_logo_header.dart';
 import 'package:flutter/foundation.dart';
 
 class AdminHomeScreen extends StatefulWidget {
@@ -146,7 +147,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error cargando contadores de bookings: $e');
+        debugPrint('Error cargando contadores de bookings: ${e.toString()}');
       }
     }
   }
@@ -168,7 +169,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         await googleSignIn.signOut();
         debugPrint('[AdminHomeScreen] ✅ Sesión de Google Sign-In cerrada');
       } catch (e) {
-        debugPrint('[AdminHomeScreen] ⚠️ Error al cerrar sesión de Google: $e');
+        debugPrint('[AdminHomeScreen] ⚠️ Error al cerrar sesión de Google: ${e.toString()}');
         // Continuar aunque falle Google Sign-In
       }
 
@@ -430,9 +431,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
   Widget _buildNarrowLayout() {
     return Scaffold(
-      appBar: AppBar(title: const Text('cuzcatlansv.ride')),
+      appBar: AppBar(title: const Text('')),
       drawer: _buildAdminDrawer(isExpanded: true),
-      body: const _HomeDashboardContent(),
+      body: Stack(children: [_selectedContent, const AppLogoHeader()]),
     );
   }
 
@@ -447,29 +448,34 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             child: _buildAdminDrawer(isExpanded: _isDrawerExpanded),
           ),
           Expanded(
-            child: Column(
+            child: Stack(
               children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                  child: Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.menu, color: Colors.white),
-                        onPressed: _toggleDrawer,
-                        tooltip: 'Toggle Menu',
+                Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                      child: Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.menu, color: Colors.white),
+                            onPressed: _toggleDrawer,
+                            tooltip: 'Toggle Menu',
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(24),
-                      bottomLeft: Radius.circular(24),
                     ),
-                    child: Container(color: Colors.white, child: _selectedContent),
-                  ),
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(24),
+                          bottomLeft: Radius.circular(24),
+                        ),
+                        child: Container(color: Colors.white, child: _selectedContent),
+                      ),
+                    ),
+                  ],
                 ),
+                const AppLogoHeader(),
               ],
             ),
           ),
@@ -494,14 +500,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
                 alignment: isExpanded ? Alignment.centerLeft : Alignment.center,
                 child: isExpanded
-                    ? const Text(
-                        'cuzcatlansv.ride',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      )
+                    ? const SizedBox.shrink()
                     : const Icon(Icons.directions_car, color: Colors.white, size: 30),
               ),
               _buildMenuItem(
@@ -852,10 +851,7 @@ class _AdminScreenWrapper extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
                 alignment: Alignment.centerLeft,
-                child: const Text(
-                  'cuzcatlansv.ride',
-                  style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
-                ),
+                child: const SizedBox.shrink(),
               ),
               _buildMenuItem(
                 text: 'Home',

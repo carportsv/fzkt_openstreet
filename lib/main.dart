@@ -1,48 +1,99 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+import 'package:provider/provider.dart';
 import 'auth/firebase_options.dart';
 import 'auth/supabase_service.dart';
 import 'router/route_handler.dart';
+import 'l10n/app_localizations.dart';
+import 'l10n/locale_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Load environment variables
-  // El .env siempre está en la raíz del proyecto
-  // En móvil, debe estar listado en pubspec.yaml bajo assets
+  // En Flutter Web, el navegador solo puede acceder a assets servidos por HTTP
+  // Por eso usamos 'env' (sin punto) como asset en lugar de '.env'
+  // El archivo 'env' está en la raíz del proyecto y se declara en pubspec.yaml
+  bool envLoaded = false;
+
   try {
-    await dotenv.load(fileName: ".env");
-    debugPrint('✅ .env cargado exitosamente');
+    // Cargar desde 'env' (asset) - funciona en todas las plataformas
+    await dotenv.load(fileName: "env");
+    envLoaded = true;
+    if (kDebugMode) {
+      debugPrint('✅ Variables de entorno cargadas exitosamente desde env');
+    }
   } catch (e) {
-    debugPrint('❌ Error cargando .env: $e');
-    debugPrint('⚠️ La app continuará, pero puede fallar la inicialización de Firebase');
+    debugPrint('❌ Error cargando variables de entorno: ${e.toString()}');
+    debugPrint('⚠️ La app continuará, pero puede fallar la inicialización de Firebase/Supabase');
+    if (kDebugMode) {
+      debugPrint('💡 Asegúrate de que el archivo "env" existe en la raíz y está en pubspec.yaml');
+    }
   }
 
-  // Initialize Firebase
-  if (Firebase.apps.isEmpty) {
+  // Initialize Firebase solo si las variables de entorno están cargadas
+  if (envLoaded && Firebase.apps.isEmpty) {
     try {
       await Firebase.initializeApp(options: await DefaultFirebaseOptions.currentPlatform);
       debugPrint('✅ Firebase inicializado');
     } catch (e, stackTrace) {
-      debugPrint('❌ Error inicializando Firebase: $e');
-      debugPrint('Stack trace: $stackTrace');
+      // Convertir excepción a string de forma segura para Flutter Web
+      final errorMessage = e.toString();
+      final stackTraceMessage = stackTrace.toString();
+      debugPrint('❌ Error inicializando Firebase: $errorMessage');
+      debugPrint('Stack trace: $stackTraceMessage');
       // Continuar aunque Firebase falle - la app mostrará un error en AuthGate
     }
   }
 
-  // Initialize Supabase
-  try {
-    await SupabaseService().initialize();
-    debugPrint('✅ Supabase inicializado');
-  } catch (e, stackTrace) {
-    // Log error but don't crash the app - Supabase operations will fail gracefully
-    debugPrint('⚠️ Warning: Could not initialize Supabase: $e');
-    debugPrint('Stack trace: $stackTrace');
-    // Continuar - las operaciones de Supabase manejarán el error
+  // Initialize Supabase solo si las variables de entorno están cargadas
+  if (envLoaded) {
+    try {
+      await SupabaseService().initialize();
+      debugPrint('✅ Supabase inicializado');
+    } catch (e, stackTrace) {
+      // Convertir excepción a string de forma segura para Flutter Web
+      final errorMessage = e.toString();
+      final stackTraceMessage = stackTrace.toString();
+      // Log error but don't crash the app - Supabase operations will fail gracefully
+      debugPrint('⚠️ Warning: Could not initialize Supabase: $errorMessage');
+      debugPrint('Stack trace: $stackTraceMessage');
+      // Continuar - las operaciones de Supabase manejarán el error
+    }
+  } else {
+    if (kDebugMode) {
+      debugPrint('⚠️ Supabase no se inicializará: variables de entorno no disponibles');
+    }
   }
+
+  // Configurar error handler global para Flutter Web
+  FlutterError.onError = (FlutterErrorDetails details) {
+    // Convertir excepción a string de forma segura para Flutter Web
+    final errorString = details.exception.toString();
+
+    // Ignorar errores 429 (Too Many Requests) - son temporales y no críticos
+    if (errorString.contains('statusCode: 429') || errorString.contains('Too Many Requests')) {
+      // No loguear estos errores como críticos
+      return;
+    }
+
+    // Ignorar errores de carga de imágenes de red que ya tienen fallback
+    if (errorString.contains('NetworkImageLoadException') ||
+        errorString.contains('HTTP request failed')) {
+      // Estos errores ya son manejados por SafeNetworkImage
+      return;
+    }
+
+    if (kDebugMode) {
+      debugPrint('❌ Error no manejado: $errorString');
+      debugPrint('Stack trace: ${details.stack}');
+    }
+    FlutterError.presentError(details);
+  };
 
   runApp(const MyApp());
 }
@@ -52,28 +103,33 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: const RouteHandler(),
-      // Prevenir que Flutter intente manipular el historial automáticamente
-      // Esto evita el SecurityError cuando hay URLs con dobles barras
-      restorationScopeId: null,
-      // Localizaciones para DatePicker y otros widgets de Material
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: const [
-        Locale('en', 'US'), // Inglés
-        Locale('es', 'ES'), // Español
-      ],
-      locale: const Locale('es', 'ES'), // Idioma por defecto
-      // Usar un builder para capturar errores de routing
-      builder: (context, child) {
-        // Si hay un error, mostrar el widget hijo de todas formas
-        return child ?? const RouteHandler();
-      },
+    return ChangeNotifierProvider(
+      create: (_) => LocaleProvider(),
+      child: Consumer<LocaleProvider>(
+        builder: (context, localeProvider, child) {
+          return MaterialApp(
+            debugShowCheckedModeBanner: false,
+            home: const RouteHandler(),
+            // Prevenir que Flutter intente manipular el historial automáticamente
+            // Esto evita el SecurityError cuando hay URLs con dobles barras
+            restorationScopeId: null,
+            // Localizaciones para DatePicker y otros widgets de Material
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: localeProvider.locale, // Idioma dinámico
+            // Usar un builder para capturar errores de routing
+            builder: (context, child) {
+              // Si hay un error, mostrar el widget hijo de todas formas
+              return child ?? const RouteHandler();
+            },
+          );
+        },
+      ),
     );
   }
 }

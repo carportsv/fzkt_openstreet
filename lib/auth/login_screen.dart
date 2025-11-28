@@ -8,14 +8,13 @@ import 'package:google_fonts/google_fonts.dart';
 import 'firebase_options.dart';
 import 'user_service.dart';
 import '../screens/admin/admin_home_screen.dart';
-import '../screens/welcome/welcome_screen.dart';
+import '../screens/welcome/welcome/welcome_screen.dart';
 
 // Importar js_interop solo en web usando importación condicional
 import 'dart:js_interop' if (dart.library.io) 'dart:js_interop_stub.dart' as js_interop;
 
 // Constants
 const _kPrimaryColor = Color(0xFF1D4ED8);
-const _kTextColor = Color(0xFF1A202C);
 const _kSpacing = 16.0;
 const _kBorderRadius = 12.0;
 
@@ -98,7 +97,7 @@ class _LoginScreenState extends State<LoginScreen> {
           });
         } catch (e) {
           if (kDebugMode) {
-            debugPrint('[LoginScreen] ⚠️ Error obteniendo rol en stream: $e');
+            debugPrint('[LoginScreen] ⚠️ Error obteniendo rol en stream: ${e.toString()}');
           }
           // En caso de error, redirigir a /welcome
           if (mounted) {
@@ -168,7 +167,7 @@ class _LoginScreenState extends State<LoginScreen> {
           userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
           debugPrint('[LoginScreen] ✅ Autenticado con Firebase');
         } catch (e) {
-          debugPrint('[LoginScreen] ⚠️ Error con Firebase Auth JS: $e');
+          debugPrint('[LoginScreen] ⚠️ Error con Firebase Auth JS: ${e.toString()}');
           // Fallback a google_sign_in si Firebase Auth JS falla
           debugPrint('[LoginScreen] Intentando con google_sign_in como fallback...');
           final GoogleSignIn googleSignIn = GoogleSignIn(
@@ -269,7 +268,7 @@ class _LoginScreenState extends State<LoginScreen> {
             }
           }
         } catch (e) {
-          debugPrint('[LoginScreen] ⚠️ Error obteniendo rol: $e');
+          debugPrint('[LoginScreen] ⚠️ Error obteniendo rol: ${e.toString()}');
           // En caso de error, redirigir a /welcome
           if (mounted) {
             Navigator.of(
@@ -279,12 +278,15 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       }
     } catch (e, stackTrace) {
-      debugPrint('[LoginScreen] ❌ ERROR: $e');
-      debugPrint('[LoginScreen] Stack trace: $stackTrace');
+      final errorMessage = e.toString();
+      final stackTraceMessage = stackTrace.toString();
+      debugPrint('[LoginScreen] ❌ ERROR: $errorMessage');
+      debugPrint('[LoginScreen] Stack trace: $stackTraceMessage');
       if (mounted) {
+        final safeErrorMessage = errorMessage;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al iniciar sesión: ${e.toString()}'),
+            content: Text('Error al iniciar sesión: $safeErrorMessage'),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 4),
           ),
@@ -337,17 +339,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: _kSpacing * 2),
 
-                        // Título
-                        Text(
-                          'cuzcatlansv.ride',
-                          style: GoogleFonts.exo(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: _kTextColor,
-                            letterSpacing: -0.5,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
+                        // Título removido
                         const SizedBox(height: _kSpacing),
 
                         // Subtítulo

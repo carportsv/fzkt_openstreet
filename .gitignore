@@ -43,10 +43,11 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Environment variables - IMPORTANTE: No subir .env
+# Environment variables - IMPORTANTE: No subir .env ni env
 .env
 .env.local
 .env.*.local
+env
 
 # Firebase
 google-services.json
@@ -103,3 +104,17 @@ Thumbs.db
 # Backups locales (no subir a git)
 backups/
 temp_backup.ps1
+BACKUP_INFO.txt
+REVISION_PROYECTO.md
+
+# Carpetas duplicadas del backup (no subir)
+android/android/
+lib/lib/
+assets/assets/
+ios/ios/
+web/web/
+windows/windows/
+scripts/scripts/
+test/test/
+expo/expo/
+.github/.github/

@@ -20,8 +20,19 @@ class SupabaseService {
   /// Inicializar Supabase con las credenciales del .env
   Future<void> initialize() async {
     try {
-      final supabaseUrl = dotenv.env['EXPO_PUBLIC_SUPABASE_URL'];
-      final supabaseAnonKey = dotenv.env['EXPO_PUBLIC_SUPABASE_ANON_KEY'];
+      String? supabaseUrl;
+      String? supabaseAnonKey;
+
+      try {
+        supabaseUrl = dotenv.env['EXPO_PUBLIC_SUPABASE_URL'];
+        supabaseAnonKey = dotenv.env['EXPO_PUBLIC_SUPABASE_ANON_KEY'];
+      } catch (e) {
+        // Si dotenv no está inicializado, lanzar un error más descriptivo
+        throw Exception(
+          'dotenv no está inicializado. En Flutter Web, las variables de entorno deben estar disponibles globalmente.\n'
+          'Error: $e',
+        );
+      }
 
       if (supabaseUrl == null || supabaseAnonKey == null) {
         throw Exception(

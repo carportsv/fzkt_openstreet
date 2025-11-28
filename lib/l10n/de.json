@@ -1,0 +1,72 @@
+{
+  "app": {
+    "name": "Taxi App"
+  },
+  "welcome": {
+    "title": "Ihre perfekte Reise beginnt hier",
+    "subtitle": "Buchen Sie Ihre Fahrt schnell und sicher. Verfügbar 24/7, um Sie dorthin zu bringen, wo Sie möchten."
+  },
+  "nav": {
+    "home": "Startseite",
+    "company": "Unternehmen",
+    "service": "Service",
+    "rates": "Tarife",
+    "destination": "Ziel",
+    "contacts": "Kontakte"
+  },
+  "form": {
+    "origin": "Ursprung",
+    "destination": "Ziel",
+    "pickupDate": "Abholtermin",
+    "pickupTime": "Abholzeit",
+    "passengers": "Passagiere",
+    "passenger": "Passagier",
+    "seePrices": "Preise anzeigen",
+    "requestRide": "Fahrt anfordern",
+    "originPlaceholder": "Wo sollen wir Sie abholen?",
+    "destinationPlaceholder": "Wohin fahren Sie?",
+    "timePlaceholder": "HH:mm (z.B: 08:30)",
+    "pickupLocation": "Ursprung",
+    "dropoffLocation": "Ziel",
+    "distance": "Entfernung",
+    "estimatedPrice": "Geschätzter Preis",
+    "cancel": "Abbrechen",
+    "select": "Auswählen",
+    "verifiedDrivers": "Verifizierte Fahrer",
+    "createAccount": "Konto erstellen",
+    "accountRequiredMessage": "Sie müssen ein Konto erstellen, um Fahrten anzufordern. Möchten Sie jetzt ein Konto erstellen?"
+  },
+  "auth": {
+    "register": "Registrieren",
+    "login": "Anmelden",
+    "logout": "Abmelden",
+    "myProfile": "Mein Profil",
+    "accountRequired": "Konto erforderlich"
+  },
+  "features": {
+    "title": "Funktionen",
+    "payment": "Mehrere Zahlungsmethoden",
+    "safety": "Sichere und zuverlässige Fahrten",
+    "availability": "Verfügbar 24/7",
+    "support": "Kundensupport",
+    "quickBooking": "Schnelle und einfache Buchung"
+  },
+  "vehicles": {
+    "economy": "Wirtschaft",
+    "sedan": "Limousine",
+    "suv": "SUV",
+    "van": "Van",
+    "luxury": "Luxus",
+    "spacious": "Geräumig für Gruppen",
+    "comfortable": "Komfortabel und gemütlich",
+    "premium": "Premium-Erlebnis",
+    "luggage": "Gepäck",
+    "passengers": "Passagiere",
+    "economyDesc": "Ideal für kurze Fahrten",
+    "sedanDesc": "Komfortabel und gemütlich",
+    "suvDesc": "Geräumig für Gruppen",
+    "vanDesc": "Perfekt für große Gruppen",
+    "luxuryDesc": "Premium-Erlebnis"
+  }
+}
+

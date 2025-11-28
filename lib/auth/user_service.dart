@@ -9,7 +9,18 @@ import 'supabase_service.dart';
 /// Mantiene compatibilidad con la interfaz anterior mientras migra a Supabase
 class UserService {
   final SupabaseService _supabaseService = SupabaseService();
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  // Getter lazy para FirebaseAuth que maneja errores de forma segura
+  FirebaseAuth? get _auth {
+    try {
+      return FirebaseAuth.instance;
+    } catch (e) {
+      if (kDebugMode) {
+        print('[UserService] ⚠️ Firebase no inicializado: ${e.toString()}');
+      }
+      return null;
+    }
+  }
 
   /// Obtener rol del usuario desde Supabase
   /// Reemplaza getUserRole de FirestoreService
@@ -79,12 +90,14 @@ class UserService {
   /// Enviar email de reset de contraseña (usa Firebase Auth)
   Future<bool> sendPasswordResetEmail(String email) async {
     if (email.isEmpty) return false;
+    final auth = _auth;
+    if (auth == null) return false;
     try {
-      await _auth.sendPasswordResetEmail(email: email);
+      await auth.sendPasswordResetEmail(email: email);
       return true;
     } catch (e) {
       if (kDebugMode) {
-        print('[UserService] Error sending password reset: $e');
+        print('[UserService] Error sending password reset: ${e.toString()}');
       }
       return false;
     }
@@ -92,9 +105,18 @@ class UserService {
 
   /// Sincronizar usuario de Firebase con Supabase
   Future<bool> syncUserWithSupabase() async {
-    final user = _auth.currentUser;
-    if (user == null) return false;
-    return await _supabaseService.syncUserWithSupabase(user);
+    final auth = _auth;
+    if (auth == null) return false;
+    try {
+      final user = auth.currentUser;
+      if (user == null) return false;
+      return await _supabaseService.syncUserWithSupabase(user);
+    } catch (e) {
+      if (kDebugMode) {
+        print('[UserService] Error syncing user: ${e.toString()}');
+      }
+      return false;
+    }
   }
 }
 

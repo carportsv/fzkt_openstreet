@@ -123,10 +123,11 @@ class _WebLoginScreenState extends State<WebLoginScreen> {
           errorMessage = 'Email inválido';
           break;
         default:
-          errorMessage = 'Error: ${e.message}';
+          errorMessage = 'Error: ${e.message ?? e.toString()}';
       }
 
-      debugPrint('[WebLoginScreen] ❌ ERROR: ${e.code} - $errorMessage');
+      final errorCode = e.code;
+      debugPrint('[WebLoginScreen] ❌ ERROR: $errorCode - $errorMessage');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -138,8 +139,10 @@ class _WebLoginScreenState extends State<WebLoginScreen> {
         );
       }
     } catch (e, stackTrace) {
-      debugPrint('[WebLoginScreen] ❌ ERROR: $e');
-      debugPrint('[WebLoginScreen] Stack trace: $stackTrace');
+      final errorMessage = e.toString();
+      final stackTraceMessage = stackTrace.toString();
+      debugPrint('[WebLoginScreen] ❌ ERROR: $errorMessage');
+      debugPrint('[WebLoginScreen] Stack trace: $stackTraceMessage');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -249,7 +252,7 @@ class _WebLoginScreenState extends State<WebLoginScreen> {
             }
           }
         } catch (e) {
-          debugPrint('[WebLoginScreen] ⚠️ Segundo intento falló: $e');
+          debugPrint('[WebLoginScreen] ⚠️ Segundo intento falló: ${e.toString()}');
         }
 
         // Si todo falla, mostrar error claro
@@ -293,8 +296,10 @@ class _WebLoginScreenState extends State<WebLoginScreen> {
         );
       }
     } catch (e, stackTrace) {
-      debugPrint('[WebLoginScreen] ❌ ERROR: $e');
-      debugPrint('[WebLoginScreen] Stack trace: $stackTrace');
+      final errorMessage = e.toString();
+      final stackTraceMessage = stackTrace.toString();
+      debugPrint('[WebLoginScreen] ❌ ERROR: $errorMessage');
+      debugPrint('[WebLoginScreen] Stack trace: $stackTraceMessage');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -335,14 +340,7 @@ class _WebLoginScreenState extends State<WebLoginScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
-                      'cuzcatlansv.ride',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
+                    // Título removido
                     const SizedBox(height: 12),
                     const Text(
                       'Inicia sesión para continuar',

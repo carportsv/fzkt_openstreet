@@ -54,8 +54,43 @@ class AuthGate extends StatelessWidget {
         );
       }
 
-      // Try to get Firebase Auth instance
-      final auth = FirebaseAuth.instance;
+      // Try to get Firebase Auth instance de forma segura
+      FirebaseAuth? auth;
+      try {
+        auth = FirebaseAuth.instance;
+      } catch (e) {
+        final errorMessage = e.toString();
+        if (kDebugMode) {
+          debugPrint('❌ AuthGate: Error obteniendo FirebaseAuth: $errorMessage');
+        }
+        auth = null;
+      }
+
+      if (auth == null) {
+        // Si no se pudo obtener Firebase Auth, mostrar error
+        return Scaffold(
+          backgroundColor: Colors.white,
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                const SizedBox(height: 16),
+                const Text(
+                  'Error de inicialización',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Firebase no se pudo inicializar.\nRevisa la consola para más detalles.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey, fontSize: 14),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
 
       if (kDebugMode) {
         debugPrint('✅ AuthGate: Firebase initialized, listening to auth state...');
@@ -65,9 +100,12 @@ class AuthGate extends StatelessWidget {
       return _AuthGateContent(auth: auth);
     } catch (e, stackTrace) {
       // If Firebase is not initialized, show error screen
+      // Convertir excepción a string de forma segura para Flutter Web
+      final errorMessage = e.toString();
+      final stackTraceMessage = stackTrace.toString();
       if (kDebugMode) {
-        debugPrint('❌ AuthGate: Exception caught: $e');
-        debugPrint('Stack trace: $stackTrace');
+        debugPrint('❌ AuthGate: Exception caught: $errorMessage');
+        debugPrint('Stack trace: $stackTraceMessage');
       }
       // Show error screen with details
       return Scaffold(
@@ -84,7 +122,7 @@ class AuthGate extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Error: ${e.toString()}',
+                'Error: $errorMessage',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.grey[600], fontSize: 12),
               ),

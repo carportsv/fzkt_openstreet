@@ -1,0 +1,72 @@
+{
+  "app": {
+    "name": "Taxi App"
+  },
+  "welcome": {
+    "title": "Tu viaje perfecto comienza aquí",
+    "subtitle": "Solicita tu viaje de manera rápida y segura. Disponible 24/7 para llevarte a donde necesites."
+  },
+  "nav": {
+    "home": "Inicio",
+    "company": "Empresa",
+    "service": "Servicio",
+    "rates": "Tarifas",
+    "destination": "Destino",
+    "contacts": "Contactos"
+  },
+  "form": {
+    "origin": "Origen",
+    "destination": "Destino",
+    "pickupDate": "Fecha de recogida",
+    "pickupTime": "Hora de recogida",
+    "passengers": "Pasajeros",
+    "passenger": "pasajero",
+    "seePrices": "Ver precios",
+    "requestRide": "Solicitar viaje",
+    "originPlaceholder": "¿Dónde te recogemos?",
+    "destinationPlaceholder": "¿A dónde vas?",
+    "timePlaceholder": "HH:mm (ej: 08:30)",
+    "pickupLocation": "Origen",
+    "dropoffLocation": "Destino",
+    "distance": "Distancia",
+    "estimatedPrice": "Precio estimado",
+    "cancel": "Cancelar",
+    "select": "Seleccionar",
+    "verifiedDrivers": "Conductores verificados",
+    "createAccount": "Crear cuenta",
+    "accountRequiredMessage": "Necesitas crear una cuenta para solicitar viajes. ¿Deseas crear una cuenta ahora?"
+  },
+  "auth": {
+    "register": "Regístrate",
+    "login": "Iniciar sesión",
+    "logout": "Cerrar sesión",
+    "myProfile": "Mi Perfil",
+    "accountRequired": "Cuenta requerida"
+  },
+  "features": {
+    "title": "Características",
+    "payment": "Múltiples métodos de pago",
+    "safety": "Viajes seguros y confiables",
+    "availability": "Disponible 24/7",
+    "support": "Soporte al cliente",
+    "quickBooking": "Reserva rápida y fácil"
+  },
+  "vehicles": {
+    "economy": "Económica",
+    "sedan": "Sedán",
+    "suv": "SUV",
+    "van": "Van",
+    "luxury": "Lujo",
+    "spacious": "Espacioso para grupos",
+    "comfortable": "Cómodo y confortable",
+    "premium": "Experiencia premium",
+    "luggage": "Equipajes",
+    "passengers": "Pasajeros",
+    "economyDesc": "Ideal para viajes cortos",
+    "sedanDesc": "Cómodo y confortable",
+    "suvDesc": "Espacioso para grupos",
+    "vanDesc": "Perfecto para grupos grandes",
+    "luxuryDesc": "Experiencia premium"
+  }
+}
+

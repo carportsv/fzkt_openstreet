@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../auth/auth_gate.dart';
-import '../screens/welcome/welcome_screen.dart';
+import '../screens/welcome/welcome/welcome_screen.dart';
 
 /// Widget que maneja las rutas basándose en la URL actual
 class RouteHandler extends StatelessWidget {
@@ -59,6 +59,8 @@ class RouteHandler extends StatelessWidget {
             normalizedFragment.contains('/welcome') ||
             fragment == 'welcome' ||
             fragment == '/welcome';
+        // Mostrar WelcomeScreen en la ruta raíz (/) o en /welcome
+        final isRootPath = normalizedPath == '/' || normalizedPath.isEmpty;
 
         if (kDebugMode) {
           debugPrint('[RouteHandler] Normalized path: $normalizedPath');
@@ -66,10 +68,11 @@ class RouteHandler extends StatelessWidget {
           debugPrint('[RouteHandler] isWelcomePath: $isWelcomePath');
           debugPrint('[RouteHandler] isWelcomeFragment: $isWelcomeFragment');
           debugPrint('[RouteHandler] hasWelcomeInUrl: $hasWelcomeInUrl');
+          debugPrint('[RouteHandler] isRootPath: $isRootPath');
         }
 
-        // Mostrar WelcomeScreen SOLO si es específicamente /welcome
-        if (isWelcomePath || isWelcomeFragment || hasWelcomeInUrl) {
+        // Mostrar WelcomeScreen si es la ruta raíz (/) o /welcome
+        if (isRootPath || isWelcomePath || isWelcomeFragment || hasWelcomeInUrl) {
           if (kDebugMode) {
             debugPrint('[RouteHandler] Showing WelcomeScreen');
           }

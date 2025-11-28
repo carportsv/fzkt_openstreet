@@ -2,8 +2,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../welcome/welcome_screen.dart';
-import '../welcome/request_ride_screen.dart';
+import '../../widgets/app_logo_header.dart';
+import '../welcome/welcome/welcome_screen.dart';
+import '../welcome/welcome/request_ride_screen.dart';
 
 // Constants
 const _kPrimaryColor = Color(0xFF1D4ED8);
@@ -58,7 +59,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
         await googleSignIn.signOut();
         debugPrint('[UserHomeScreen] ✅ Sesión de Google Sign-In cerrada');
       } catch (e) {
-        debugPrint('[UserHomeScreen] ⚠️ Error al cerrar sesión de Google: $e');
+        debugPrint('[UserHomeScreen] ⚠️ Error al cerrar sesión de Google: ${e.toString()}');
         // Continuar aunque falle Google Sign-In
       }
 
@@ -90,10 +91,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'cuzcatlansv.ride',
-          style: GoogleFonts.exo(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-        ),
+        title: const Text(''),
         backgroundColor: _kPrimaryColor,
         elevation: 0,
         actions: [
@@ -122,107 +120,114 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
           ),
         ],
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Colors.white, _kPrimaryColor.withValues(alpha: 0.03)],
-          ),
-        ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header Section
-                _buildHeader(context),
-                const SizedBox(height: _kSpacing * 3),
+      body: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Colors.white, _kPrimaryColor.withValues(alpha: 0.03)],
+              ),
+            ),
+            child: SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header Section
+                    _buildHeader(context),
+                    const SizedBox(height: _kSpacing * 3),
 
-                // Main Content - Botón para solicitar viaje
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(_kSpacing * 2),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(_kBorderRadius * 2),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.08),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
+                    // Main Content - Botón para solicitar viaje
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(_kSpacing * 2),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(_kBorderRadius * 2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 100,
-                        height: 100,
-                        decoration: BoxDecoration(
-                          color: _kPrimaryColor.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(Icons.directions_car, size: 50, color: _kPrimaryColor),
-                      ),
-                      const SizedBox(height: _kSpacing * 2),
-                      Text(
-                        '¿Listo para tu próximo viaje?',
-                        style: GoogleFonts.exo(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: _kTextColor,
-                          height: 1.3,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: _kSpacing),
-                      Text(
-                        'Solicita un viaje de manera rápida y fácil',
-                        style: GoogleFonts.exo(
-                          fontSize: 16,
-                          color: Colors.grey.shade600,
-                          height: 1.5,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: _kSpacing * 3),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(builder: (context) => const RequestRideScreen()),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _kPrimaryColor,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 18),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(_kBorderRadius),
+                      child: Column(
+                        children: [
+                          Container(
+                            width: 100,
+                            height: 100,
+                            decoration: BoxDecoration(
+                              color: _kPrimaryColor.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
                             ),
-                            elevation: 3,
-                            shadowColor: _kPrimaryColor.withValues(alpha: 0.4),
+                            child: Icon(Icons.directions_car, size: 50, color: _kPrimaryColor),
                           ),
-                          child: Text(
-                            'Solicitar Viaje',
-                            style: GoogleFonts.exo(fontSize: 18, fontWeight: FontWeight.bold),
+                          const SizedBox(height: _kSpacing * 2),
+                          Text(
+                            '¿Listo para tu próximo viaje?',
+                            style: GoogleFonts.exo(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: _kTextColor,
+                              height: 1.3,
+                            ),
+                            textAlign: TextAlign.center,
                           ),
-                        ),
+                          const SizedBox(height: _kSpacing),
+                          Text(
+                            'Solicita un viaje de manera rápida y fácil',
+                            style: GoogleFonts.exo(
+                              fontSize: 16,
+                              color: Colors.grey.shade600,
+                              height: 1.5,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: _kSpacing * 3),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => const RequestRideScreen(),
+                                  ),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: _kPrimaryColor,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 18),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(_kBorderRadius),
+                                ),
+                                elevation: 3,
+                                shadowColor: _kPrimaryColor.withValues(alpha: 0.4),
+                              ),
+                              child: Text(
+                                'Solicitar Viaje',
+                                style: GoogleFonts.exo(fontSize: 18, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: _kSpacing * 3),
+                    ),
+                    const SizedBox(height: _kSpacing * 3),
 
-                // Features Section
-                _buildFeaturesSection(),
-              ],
+                    // Features Section
+                    _buildFeaturesSection(),
+                  ],
+                ),
+              ),
             ),
           ),
-        ),
+          const AppLogoHeader(),
+        ],
       ),
     );
   }

@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../../widgets/app_logo_header.dart';
 
 class DriverHomeScreen extends StatelessWidget {
   const DriverHomeScreen({super.key});
@@ -24,18 +25,23 @@ class DriverHomeScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.local_taxi, size: 80, color: Colors.blueGrey),
-            SizedBox(height: 20),
-            Text(
-              'Bienvenido, Conductor!',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+      body: Stack(
+        children: [
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.local_taxi, size: 80, color: Colors.blueGrey),
+                SizedBox(height: 20),
+                Text(
+                  'Bienvenido, Conductor!',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+          const AppLogoHeader(),
+        ],
       ),
     );
   }

@@ -1,0 +1,72 @@
+{
+  "app": {
+    "name": "Taxi App"
+  },
+  "welcome": {
+    "title": "Your perfect trip starts here",
+    "subtitle": "Request your trip quickly and safely. Available 24/7 to take you wherever you need."
+  },
+  "nav": {
+    "home": "Home",
+    "company": "Company",
+    "service": "Service",
+    "rates": "Rates",
+    "destination": "Destination",
+    "contacts": "Contacts"
+  },
+  "form": {
+    "origin": "Origin",
+    "destination": "Destination",
+    "pickupDate": "Pickup date",
+    "pickupTime": "Pickup time",
+    "passengers": "Passengers",
+    "passenger": "passenger",
+    "seePrices": "See prices",
+    "requestRide": "Request ride",
+    "originPlaceholder": "Where should we pick you up?",
+    "destinationPlaceholder": "Where are you going?",
+    "timePlaceholder": "HH:mm (e.g: 08:30)",
+    "pickupLocation": "Origin",
+    "dropoffLocation": "Destination",
+    "distance": "Distance",
+    "estimatedPrice": "Estimated price",
+    "cancel": "Cancel",
+    "select": "Select",
+    "verifiedDrivers": "Verified drivers",
+    "createAccount": "Create account",
+    "accountRequiredMessage": "You need to create an account to request rides. Would you like to create an account now?"
+  },
+  "auth": {
+    "register": "Register",
+    "login": "Sign in",
+    "logout": "Sign out",
+    "myProfile": "My Profile",
+    "accountRequired": "Account required"
+  },
+  "features": {
+    "title": "Features",
+    "payment": "Multiple payment methods",
+    "safety": "Safe and reliable trips",
+    "availability": "Available 24/7",
+    "support": "Customer support",
+    "quickBooking": "Quick and easy booking"
+  },
+  "vehicles": {
+    "economy": "Economy",
+    "sedan": "Sedan",
+    "suv": "SUV",
+    "van": "Van",
+    "luxury": "Luxury",
+    "spacious": "Spacious for groups",
+    "comfortable": "Comfortable and cozy",
+    "premium": "Premium experience",
+    "luggage": "Luggage",
+    "passengers": "Passengers",
+    "economyDesc": "Ideal for short trips",
+    "sedanDesc": "Comfortable and cozy",
+    "suvDesc": "Spacious for groups",
+    "vanDesc": "Perfect for large groups",
+    "luxuryDesc": "Premium experience"
+  }
+}
+
