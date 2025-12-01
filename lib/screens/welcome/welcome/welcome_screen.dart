@@ -18,6 +18,10 @@ import '../form/ride_calculation_service.dart';
 import '../carousel/vehicle/vehicle_carousel.dart';
 import '../carousel/vehicle/vehicle_data.dart';
 import '../carousel/background/background_carousel.dart';
+import 'widgets/welcome_footer.dart';
+import 'company_screen.dart';
+import 'destinations_screen.dart';
+import 'contacts_screen.dart';
 
 // Constants
 const _kPrimaryColor = Color(0xFF1D4ED8);
@@ -553,6 +557,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         onNavigateToProfile: _navigateToProfile,
         onHandleLogout: _handleLogout,
         onNavigateToWelcomePath: _navigateToWelcomePath,
+        onNavigateToCompany: _navigateToCompany,
+        onNavigateToDestination: _navigateToDestination,
+        onNavigateToContacts: _navigateToContacts,
       ),
       body: Stack(
         children: [
@@ -625,6 +632,127 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     }
   }
 
+  /// Navega a /empresa en web
+  void _navigateToCompany() {
+    if (kDebugMode) {
+      debugPrint('[WelcomeScreen] _navigateToCompany llamado');
+      debugPrint('[WelcomeScreen] Context mounted: $mounted');
+    }
+
+    if (!mounted) {
+      if (kDebugMode) {
+        debugPrint('[WelcomeScreen] ⚠️ Context no está montado, no se puede navegar');
+      }
+      return;
+    }
+
+    try {
+      if (kDebugMode) {
+        debugPrint('[WelcomeScreen] Navegando a CompanyScreen');
+      }
+      // Usar pushReplacement para reemplazar la pantalla actual
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (context) => const CompanyScreen()));
+      if (kDebugMode) {
+        debugPrint('[WelcomeScreen] ✅ Navegación iniciada');
+      }
+    } catch (e, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('[WelcomeScreen] ❌ Error navegando a CompanyScreen: $e');
+        debugPrint('[WelcomeScreen] Stack trace: $stackTrace');
+      }
+      // Fallback: intentar con push normal
+      try {
+        Navigator.of(context).push(MaterialPageRoute(builder: (context) => const CompanyScreen()));
+      } catch (e2) {
+        if (kDebugMode) {
+          debugPrint('[WelcomeScreen] ❌ Error en fallback también: $e2');
+        }
+      }
+    }
+  }
+
+  /// Navega a destinos
+  void _navigateToDestination() {
+    if (kDebugMode) {
+      debugPrint('[WelcomeScreen] _navigateToDestination llamado');
+      debugPrint('[WelcomeScreen] Context mounted: $mounted');
+    }
+
+    if (!mounted) {
+      if (kDebugMode) {
+        debugPrint('[WelcomeScreen] ⚠️ Context no está montado, no se puede navegar');
+      }
+      return;
+    }
+
+    try {
+      if (kDebugMode) {
+        debugPrint('[WelcomeScreen] Navegando a DestinationsScreen');
+      }
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (context) => const DestinationsScreen()));
+      if (kDebugMode) {
+        debugPrint('[WelcomeScreen] ✅ Navegación iniciada');
+      }
+    } catch (e, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('[WelcomeScreen] ❌ Error navegando a DestinationsScreen: $e');
+        debugPrint('[WelcomeScreen] Stack trace: $stackTrace');
+      }
+      try {
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (context) => const DestinationsScreen()));
+      } catch (e2) {
+        if (kDebugMode) {
+          debugPrint('[WelcomeScreen] ❌ Error en fallback también: $e2');
+        }
+      }
+    }
+  }
+
+  /// Navega a contactos
+  void _navigateToContacts() {
+    if (kDebugMode) {
+      debugPrint('[WelcomeScreen] _navigateToContacts llamado');
+      debugPrint('[WelcomeScreen] Context mounted: $mounted');
+    }
+
+    if (!mounted) {
+      if (kDebugMode) {
+        debugPrint('[WelcomeScreen] ⚠️ Context no está montado, no se puede navegar');
+      }
+      return;
+    }
+
+    try {
+      if (kDebugMode) {
+        debugPrint('[WelcomeScreen] Navegando a ContactsScreen');
+      }
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (context) => const ContactsScreen()));
+      if (kDebugMode) {
+        debugPrint('[WelcomeScreen] ✅ Navegación iniciada');
+      }
+    } catch (e, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('[WelcomeScreen] ❌ Error navegando a ContactsScreen: $e');
+        debugPrint('[WelcomeScreen] Stack trace: $stackTrace');
+      }
+      try {
+        Navigator.of(context).push(MaterialPageRoute(builder: (context) => const ContactsScreen()));
+      } catch (e2) {
+        if (kDebugMode) {
+          debugPrint('[WelcomeScreen] ❌ Error en fallback también: $e2');
+        }
+      }
+    }
+  }
+
   /// Construye el carrusel de imágenes de fondo
 
   Widget _buildWideLayout() {
@@ -675,21 +803,17 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 ),
               ],
             ),
-            // Contenedor 3: Información adicional (abajo) - Dentro del scroll
+            // Contenedor 3: Información adicional - Continúa después de containers 1 y 2
+            const SizedBox(height: _kSpacing * 3),
+            _buildContainer3(),
             const SizedBox(height: _kSpacing * 2),
-            Container(
-              width: double.infinity,
-              height: 150,
-              color: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: _kSpacing),
-              child: const Center(
-                child: Text(
-                  'Contenedor adicional - Contenido por definir',
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ),
+            // Footer
+            WelcomeFooter(
+              onNavigateToWelcome: _navigateToWelcomePath,
+              onNavigateToDestination: _navigateToDestination,
+              onNavigateToCompany: _navigateToCompany,
+              onNavigateToContacts: _navigateToContacts,
             ),
-            const SizedBox(height: _kSpacing * 2),
           ],
         ),
       ),
@@ -837,18 +961,15 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             const SizedBox(height: _kSpacing * 2),
             SizedBox(height: 298, child: VehicleCarousel(vehicles: _vehicles)),
             const SizedBox(height: _kSpacing * 2),
-            // Contenedor 3: Información adicional (abajo) - Solo para móvil, dentro del scroll
-            Container(
-              width: double.infinity,
-              height: 150, // Altura reducida
-              color: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 0.0),
-              child: const Center(
-                child: Text(
-                  'Contenedor adicional - Contenido por definir',
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ),
+            // Contenedor 3: Información adicional - Continúa después de containers 1 y 2
+            _buildContainer3(),
+            const SizedBox(height: _kSpacing * 2),
+            // Footer
+            WelcomeFooter(
+              onNavigateToWelcome: _navigateToWelcomePath,
+              onNavigateToDestination: _navigateToDestination,
+              onNavigateToCompany: _navigateToCompany,
+              onNavigateToContacts: _navigateToContacts,
             ),
           ],
         ),
@@ -1109,6 +1230,156 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         ),
       ],
     );
+  }
+
+  Widget _buildContainer3() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 900;
+
+    return Container(
+      width: double.infinity,
+      margin: EdgeInsets.symmetric(
+        horizontal: isTablet ? _kSpacing * 1.5 : _kSpacing,
+        vertical: _kSpacing * 0.5,
+      ),
+      padding: EdgeInsets.all(isTablet ? _kSpacing * 2 : _kSpacing * 1.5),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(_kBorderRadius * 1.5),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.15),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Título
+          Builder(
+            builder: (context) {
+              final l10n = AppLocalizations.of(context);
+              return Center(
+                child: Text(
+                  l10n?.featuresTitle ?? 'Características',
+                  style: GoogleFonts.exo(
+                    fontSize: isTablet ? 24 : 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                    letterSpacing: -0.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: _kSpacing * 0.5),
+          // Subtítulo
+          Center(
+            child: Text(
+              'Descubre por qué somos tu mejor opción para viajar',
+              style: GoogleFonts.exo(
+                fontSize: isTablet ? 13 : 12,
+                color: Colors.black87,
+                height: 1.5,
+                fontWeight: FontWeight.w400,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          SizedBox(height: _kSpacing * (isTablet ? 3 : 2)),
+          // Grid de características
+          isTablet ? _buildFeaturesWideLayout(isTablet) : _buildFeaturesNarrowLayout(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFeaturesWideLayout(bool isTablet) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: _buildFeatureCard(1, 'Viaje', _getFeature1Text(), isTablet)),
+        SizedBox(width: _kSpacing * 3),
+        Expanded(child: _buildFeatureCard(2, 'Experiencia', _getFeature2Text(), isTablet)),
+        SizedBox(width: _kSpacing * 3),
+        Expanded(child: _buildFeatureCard(3, 'Relax', _getFeature3Text(), isTablet)),
+      ],
+    );
+  }
+
+  Widget _buildFeaturesNarrowLayout() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 900;
+
+    return Column(
+      children: [
+        _buildFeatureCard(1, 'Viaje', _getFeature1Text(), isTablet),
+        SizedBox(height: _kSpacing * 2.5),
+        _buildFeatureCard(2, 'Experiencia', _getFeature2Text(), isTablet),
+        SizedBox(height: _kSpacing * 2.5),
+        _buildFeatureCard(3, 'Relax', _getFeature3Text(), isTablet),
+      ],
+    );
+  }
+
+  Widget _buildFeatureCard(int number, String title, String description, bool isTablet) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Número grande en blanco
+        Text(
+          number.toString().padLeft(2, '0'),
+          style: GoogleFonts.exo(
+            fontSize: isTablet ? 48 : 40,
+            fontWeight: FontWeight.w300,
+            color: Colors.white,
+            height: 1.0,
+            letterSpacing: -2,
+          ),
+        ),
+        SizedBox(height: _kSpacing * 0.5),
+        // Título
+        Text(
+          title,
+          style: GoogleFonts.exo(
+            fontSize: isTablet ? 18 : 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+            height: 1.2,
+            letterSpacing: -0.3,
+          ),
+        ),
+        SizedBox(height: _kSpacing),
+        // Descripción
+        Text(
+          description,
+          style: GoogleFonts.exo(
+            fontSize: isTablet ? 12 : 11,
+            color: Colors.black87,
+            height: 1.6,
+            fontWeight: FontWeight.w400,
+            letterSpacing: 0.1,
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _getFeature1Text() {
+    return 'Un viaje con nuestro servicio es mucho más que un simple desplazamiento, es una experiencia llena de comodidad y atención personalizada. Cada destino se convierte en un viaje de relajación y descubrimiento único.';
+  }
+
+  String _getFeature2Text() {
+    return 'Descubre un mundo en el que cada viaje se transforma en una oportunidad de conexión. Vivirás momentos irrepetibles, disfrutando de un servicio impecable, destinos extraordinarios y una atención que cuida cada detalle.';
+  }
+
+  String _getFeature3Text() {
+    return 'Cada viaje es una escapada creada para renovar cuerpo y alma. Disfruta de destinos exclusivos, servicios de alta gama y una atención especial pensada para hacerte vivir el relax total que mereces.';
   }
 
   // Métodos eliminados - ahora se usan los componentes de form/

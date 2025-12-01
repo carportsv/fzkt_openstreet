@@ -21,6 +21,9 @@ class WelcomeNavbar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback onNavigateToProfile;
   final Future<void> Function() onHandleLogout;
   final VoidCallback onNavigateToWelcomePath;
+  final VoidCallback? onNavigateToCompany;
+  final VoidCallback? onNavigateToDestination;
+  final VoidCallback? onNavigateToContacts;
 
   const WelcomeNavbar({
     super.key,
@@ -29,6 +32,9 @@ class WelcomeNavbar extends StatelessWidget implements PreferredSizeWidget {
     required this.onNavigateToProfile,
     required this.onHandleLogout,
     required this.onNavigateToWelcomePath,
+    this.onNavigateToCompany,
+    this.onNavigateToDestination,
+    this.onNavigateToContacts,
   });
 
   @override
@@ -136,31 +142,67 @@ class WelcomeNavbar extends StatelessWidget implements PreferredSizeWidget {
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               _buildNavItem(navHome, () {
-                // Navegar a /welcome
-                if (kIsWeb) {
-                  // En web, simplemente recargar la página si ya estamos en /welcome
-                  // o navegar usando el método estándar
-                  final currentPath = Uri.base.path;
-                  if (currentPath == '/welcome' || currentPath.endsWith('/welcome')) {
-                    // Si ya estamos en /welcome, no hacer nada
-                    return;
-                  } else {
-                    // Navegar a /welcome usando una solución compatible
-                    // Usar un método que no requiera dart:html directamente
-                    onNavigateToWelcomePath();
+                // Navegar a /welcome siempre
+                onNavigateToWelcomePath();
+              }),
+              const SizedBox(width: 20),
+              _buildNavItem(navCompany, () {
+                if (kDebugMode) {
+                  debugPrint('[WelcomeNavbar] Botón Empresa presionado');
+                  debugPrint(
+                    '[WelcomeNavbar] onNavigateToCompany es null: ${onNavigateToCompany == null}',
+                  );
+                }
+                if (onNavigateToCompany != null) {
+                  onNavigateToCompany!();
+                } else {
+                  if (kDebugMode) {
+                    debugPrint(
+                      '[WelcomeNavbar] ⚠️ onNavigateToCompany es null, no se puede navegar',
+                    );
                   }
                 }
               }),
-              const SizedBox(width: 20),
-              _buildNavItem(navCompany, () {}),
               const SizedBox(width: 20),
               _buildNavItem(navService, () {}),
               const SizedBox(width: 20),
               _buildNavItem(navRates, () {}),
               const SizedBox(width: 20),
-              _buildNavItem(navDestination, () {}),
+              _buildNavItem(navDestination, () {
+                if (kDebugMode) {
+                  debugPrint('[WelcomeNavbar] Botón Destino presionado');
+                  debugPrint(
+                    '[WelcomeNavbar] onNavigateToDestination es null: ${onNavigateToDestination == null}',
+                  );
+                }
+                if (onNavigateToDestination != null) {
+                  onNavigateToDestination!();
+                } else {
+                  if (kDebugMode) {
+                    debugPrint(
+                      '[WelcomeNavbar] ⚠️ onNavigateToDestination es null, no se puede navegar',
+                    );
+                  }
+                }
+              }),
               const SizedBox(width: 20),
-              _buildNavItem(navContacts, () {}),
+              _buildNavItem(navContacts, () {
+                if (kDebugMode) {
+                  debugPrint('[WelcomeNavbar] Botón Contactos presionado');
+                  debugPrint(
+                    '[WelcomeNavbar] onNavigateToContacts es null: ${onNavigateToContacts == null}',
+                  );
+                }
+                if (onNavigateToContacts != null) {
+                  onNavigateToContacts!();
+                } else {
+                  if (kDebugMode) {
+                    debugPrint(
+                      '[WelcomeNavbar] ⚠️ onNavigateToContacts es null, no se puede navegar',
+                    );
+                  }
+                }
+              }),
             ],
           );
         },
