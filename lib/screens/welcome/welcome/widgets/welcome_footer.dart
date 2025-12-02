@@ -3,6 +3,7 @@ import 'package:flutter/gestures.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import '../../../../l10n/app_localizations.dart';
 
 // Constants
 const _kSpacing = 16.0;
@@ -14,6 +15,8 @@ class WelcomeFooter extends StatelessWidget {
   final VoidCallback? onNavigateToDestination;
   final VoidCallback? onNavigateToCompany;
   final VoidCallback? onNavigateToContacts;
+  final VoidCallback? onNavigateToServices;
+  final VoidCallback? onNavigateToAbout;
 
   const WelcomeFooter({
     super.key,
@@ -21,6 +24,8 @@ class WelcomeFooter extends StatelessWidget {
     this.onNavigateToDestination,
     this.onNavigateToCompany,
     this.onNavigateToContacts,
+    this.onNavigateToServices,
+    this.onNavigateToAbout,
   });
 
   @override
@@ -103,24 +108,36 @@ class WelcomeFooter extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    'Tu solución definitiva para traslados confiables, elegantes y personalizados.',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.exo(
-                      fontSize: 14,
-                      color: Colors.white.withValues(alpha: 0.8),
-                      height: 1.6,
-                    ),
+                  Builder(
+                    builder: (context) {
+                      final l10n = AppLocalizations.of(context);
+                      return Text(
+                        l10n?.footerDescription1 ??
+                            'Tu solución definitiva para traslados confiables, elegantes y personalizados.',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.exo(
+                          fontSize: 14,
+                          color: Colors.white.withValues(alpha: 0.8),
+                          height: 1.6,
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(height: _kSpacing * 0.5),
-                  Text(
-                    'Disponible 24/7 para llevarte a donde necesites.',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.exo(
-                      fontSize: 14,
-                      color: Colors.white.withValues(alpha: 0.8),
-                      height: 1.6,
-                    ),
+                  Builder(
+                    builder: (context) {
+                      final l10n = AppLocalizations.of(context);
+                      return Text(
+                        l10n?.footerDescription2 ??
+                            'Disponible 24/7 para llevarte a donde necesites.',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.exo(
+                          fontSize: 14,
+                          color: Colors.white.withValues(alpha: 0.8),
+                          height: 1.6,
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -165,13 +182,18 @@ class WelcomeFooter extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Fila 1: Descripción
-        Text(
-          'Tu solución definitiva para traslados confiables, elegantes y personalizados. Disponible 24/7 para llevarte a donde necesites.',
-          style: GoogleFonts.exo(
-            fontSize: 14,
-            color: Colors.white.withValues(alpha: 0.8),
-            height: 1.6,
-          ),
+        Builder(
+          builder: (context) {
+            final l10n = AppLocalizations.of(context);
+            return Text(
+              '${l10n?.footerDescription1 ?? 'Tu solución definitiva para traslados confiables, elegantes y personalizados.'} ${l10n?.footerDescription2 ?? 'Disponible 24/7 para llevarte a donde necesites.'}',
+              style: GoogleFonts.exo(
+                fontSize: 14,
+                color: Colors.white.withValues(alpha: 0.8),
+                height: 1.6,
+              ),
+            );
+          },
         ),
         const SizedBox(height: _kSpacing * 1),
         // Redes sociales
@@ -233,6 +255,7 @@ class WelcomeFooter extends StatelessWidget {
   }
 
   Widget _buildCopyright(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Center(
       child: RichText(
         textAlign: TextAlign.center,
@@ -244,8 +267,9 @@ class WelcomeFooter extends StatelessWidget {
           ),
           children: [
             TextSpan(
-              text:
-                  'Copyright © ${DateTime.now().year} Todos los derechos reservados | desarrollado por ',
+              text: l10n != null
+                  ? l10n.footerCopyright(DateTime.now().year)
+                  : 'Copyright © ${DateTime.now().year} Todos los derechos reservados | desarrollado por ',
             ),
             TextSpan(
               text: 'carportsv',

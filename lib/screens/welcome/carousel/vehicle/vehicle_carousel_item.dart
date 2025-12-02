@@ -68,9 +68,14 @@ class VehicleCarouselItem extends StatelessWidget {
                               },
                             ),
                             const SizedBox(height: 8),
-                            Text(
-                              'Imagen no disponible',
-                              style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                            Builder(
+                              builder: (context) {
+                                final l10n = AppLocalizations.of(context);
+                                return Text(
+                                  l10n?.imageNotAvailable ?? 'Imagen no disponible',
+                                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                                );
+                              },
                             ),
                           ],
                         ),

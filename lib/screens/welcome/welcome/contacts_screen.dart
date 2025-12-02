@@ -10,8 +10,11 @@ import 'widgets/welcome_footer.dart';
 import 'welcome_screen.dart';
 import 'company_screen.dart';
 import 'destinations_screen.dart';
+import 'servicios_screen.dart';
+import 'acerca_de_screen.dart';
 import '../../../auth/login_screen.dart';
 import '../../../widgets/app_logo_header.dart';
+import '../../../l10n/app_localizations.dart';
 
 // Constants
 const _kSpacing = 16.0;
@@ -79,9 +82,10 @@ class _ContactsScreenState extends State<ContactsScreen> {
   }
 
   void _navigateToProfile() {
+    final l10n = AppLocalizations.of(context);
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Mi perfil (próximamente)')));
+    ).showSnackBar(SnackBar(content: Text(l10n?.profileComingSoon ?? 'Mi perfil (próximamente)')));
   }
 
   Future<void> _handleLogout() async {
@@ -98,9 +102,10 @@ class _ContactsScreenState extends State<ContactsScreen> {
       }
     } catch (e) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al cerrar sesión: ${e.toString()}'),
+            content: Text('${l10n?.logoutError ?? 'Error al cerrar sesión'}: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -182,6 +187,38 @@ class _ContactsScreenState extends State<ContactsScreen> {
     // Ya estamos en la pantalla de contactos
   }
 
+  void _navigateToServices() {
+    if (kDebugMode) {
+      debugPrint('[ContactsScreen] _navigateToServices llamado');
+    }
+    if (!mounted) return;
+    try {
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (context) => const ServiciosScreen()));
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[ContactsScreen] ❌ Error navegando a ServiciosScreen: $e');
+      }
+    }
+  }
+
+  void _navigateToAbout() {
+    if (kDebugMode) {
+      debugPrint('[ContactsScreen] _navigateToAbout llamado');
+    }
+    if (!mounted) return;
+    try {
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (context) => const AcercaDeScreen()));
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[ContactsScreen] ❌ Error navegando a AcercaDeScreen: $e');
+      }
+    }
+  }
+
   Future<void> _launchUrl(String url) async {
     final uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
@@ -204,6 +241,8 @@ class _ContactsScreenState extends State<ContactsScreen> {
         onHandleLogout: _handleLogout,
         onNavigateToWelcomePath: _navigateToWelcomePath,
         onNavigateToCompany: _navigateToCompany,
+        onNavigateToServices: _navigateToServices,
+        onNavigateToAbout: _navigateToAbout,
         onNavigateToDestination: _navigateToDestination,
         onNavigateToContacts: _navigateToContacts,
       ),
@@ -241,29 +280,43 @@ class _ContactsScreenState extends State<ContactsScreen> {
                             crossAxisAlignment: CrossAxisAlignment.center,
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const SizedBox(height: 40), // Espacio para el navbar
-                              Text(
-                                '¿Tienes alguna pregunta?',
-                                style: GoogleFonts.exo(
-                                  fontSize: isTablet ? 28 : 24,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                  height: 1.2,
-                                ),
+                              SizedBox(
+                                height: isTablet ? 100 : 80,
+                              ), // Espacio para el navbar y logo
+                              Builder(
+                                builder: (context) {
+                                  final l10n = AppLocalizations.of(context);
+                                  return Column(
+                                    children: [
+                                      Text(
+                                        l10n?.contactsTitle ?? '¿Tienes alguna pregunta?',
+                                        style: GoogleFonts.exo(
+                                          fontSize: isTablet ? 28 : 24,
+                                          fontWeight: FontWeight.w700,
+                                          color: Colors.white,
+                                          height: 1.2,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                      const SizedBox(height: _kSpacing * 0.5),
+                                      Text(
+                                        l10n?.contactsSubtitle ?? 'Estamos aquí para ayudarte',
+                                        style: GoogleFonts.exo(
+                                          fontSize: isTablet ? 18 : 16,
+                                          fontWeight: FontWeight.w400,
+                                          color: Colors.white.withValues(alpha: 0.85),
+                                          height: 1.5,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ],
+                                  );
+                                },
                               ),
-                              const SizedBox(height: _kSpacing * 0.25),
-                              Text(
-                                'Estamos aquí para ayudarte',
-                                style: GoogleFonts.exo(
-                                  fontSize: isTablet ? 18 : 16,
-                                  fontWeight: FontWeight.w400,
-                                  color: Colors.white.withValues(alpha: 0.85),
-                                  height: 1.5,
-                                ),
-                              ),
-                              SizedBox(height: isTablet ? _kSpacing * 0.25 : _kSpacing * 0.5),
+                              SizedBox(height: isTablet ? _kSpacing * 3 : _kSpacing * 2),
                               // Contactos
-                              Expanded(child: _buildContactSection(isTablet)),
+                              Flexible(child: _buildContactSection(isTablet)),
+                              SizedBox(height: _kSpacing * 2),
                             ],
                           ),
                         ),
@@ -274,6 +327,8 @@ class _ContactsScreenState extends State<ContactsScreen> {
                         onNavigateToDestination: _navigateToDestination,
                         onNavigateToCompany: _navigateToCompany,
                         onNavigateToContacts: _navigateToContacts,
+                        onNavigateToServices: _navigateToServices,
+                        onNavigateToAbout: _navigateToAbout,
                       ),
                     ],
                   );
@@ -293,51 +348,56 @@ class _ContactsScreenState extends State<ContactsScreen> {
 
     if (isTablet) {
       // Layout de 4 columnas en tablet
-      return Center(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: maxWidth),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: _buildContactColumn(
-                  icon: Icons.phone_rounded,
-                  title: 'Teléfono',
-                  content: '(+39) 392 1774905',
-                  onTap: () => _launchUrl('tel:+393921774905'),
-                  isTablet: isTablet,
-                ),
+      return Builder(
+        builder: (context) {
+          final l10n = AppLocalizations.of(context);
+          return Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxWidth),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: _buildContactColumn(
+                      icon: Icons.phone_rounded,
+                      title: l10n?.contactsPhone ?? 'Teléfono',
+                      content: '(+39) 392 1774905',
+                      onTap: () => _launchUrl('tel:+393921774905'),
+                      isTablet: isTablet,
+                    ),
+                  ),
+                  Expanded(
+                    child: _buildContactColumn(
+                      icon: Icons.email_rounded,
+                      title: l10n?.contactsEmail ?? 'Email',
+                      content: 'info@eugeniastravelconsultancy.com',
+                      onTap: () => _launchUrl('mailto:info@lasiciliatour.com'),
+                      isTablet: isTablet,
+                    ),
+                  ),
+                  Expanded(
+                    child: _buildContactColumn(
+                      icon: Icons.language_rounded,
+                      title: l10n?.contactsWebsite ?? 'Sitio Web',
+                      content: 'www.eugeniastravelconsultancy.com',
+                      onTap: () => _launchUrl('https://www.eugeniastravelconsultancy.com/'),
+                      isTablet: isTablet,
+                    ),
+                  ),
+                  Expanded(
+                    child: _buildContactColumn(
+                      icon: Icons.location_on_rounded,
+                      title: l10n?.contactsLocation ?? 'Ubicación',
+                      content: 'Sicilia, Italia',
+                      onTap: () {},
+                      isTablet: isTablet,
+                    ),
+                  ),
+                ],
               ),
-              Expanded(
-                child: _buildContactColumn(
-                  icon: Icons.email_rounded,
-                  title: 'Email',
-                  content: 'info@eugeniastravelconsultancy.com',
-                  onTap: () => _launchUrl('mailto:info@lasiciliatour.com'),
-                  isTablet: isTablet,
-                ),
-              ),
-              Expanded(
-                child: _buildContactColumn(
-                  icon: Icons.language_rounded,
-                  title: 'Sitio Web',
-                  content: 'www.eugeniastravelconsultancy.com',
-                  onTap: () => _launchUrl('https://www.eugeniastravelconsultancy.com/'),
-                  isTablet: isTablet,
-                ),
-              ),
-              Expanded(
-                child: _buildContactColumn(
-                  icon: Icons.location_on_rounded,
-                  title: 'Ubicación',
-                  content: 'Sicilia, Italia',
-                  onTap: () {},
-                  isTablet: isTablet,
-                ),
-              ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       );
     }
 
@@ -347,36 +407,45 @@ class _ContactsScreenState extends State<ContactsScreen> {
         constraints: BoxConstraints(maxWidth: maxWidth),
         child: Column(
           children: [
-            _buildContactColumn(
-              icon: Icons.phone_rounded,
-              title: 'Teléfono',
-              content: '(+39) 392 1774905',
-              onTap: () => _launchUrl('tel:+393921774905'),
-              isTablet: isTablet,
-            ),
-            const SizedBox(height: _kSpacing * 2),
-            _buildContactColumn(
-              icon: Icons.email_rounded,
-              title: 'Email',
-              content: 'info@eugeniastravelconsultancy.com',
-              onTap: () => _launchUrl('mailto:info@lasiciliatour.com'),
-              isTablet: isTablet,
-            ),
-            const SizedBox(height: _kSpacing * 2),
-            _buildContactColumn(
-              icon: Icons.language_rounded,
-              title: 'Sitio Web',
-              content: 'www.eugeniastravelconsultancy.com',
-              onTap: () => _launchUrl('https://www.eugeniastravelconsultancy.com/'),
-              isTablet: isTablet,
-            ),
-            const SizedBox(height: _kSpacing * 2),
-            _buildContactColumn(
-              icon: Icons.location_on_rounded,
-              title: 'Ubicación',
-              content: 'Sicilia, Italia',
-              onTap: () {},
-              isTablet: isTablet,
+            Builder(
+              builder: (context) {
+                final l10n = AppLocalizations.of(context);
+                return Column(
+                  children: [
+                    _buildContactColumn(
+                      icon: Icons.phone_rounded,
+                      title: l10n?.contactsPhone ?? 'Teléfono',
+                      content: '(+39) 392 1774905',
+                      onTap: () => _launchUrl('tel:+393921774905'),
+                      isTablet: isTablet,
+                    ),
+                    const SizedBox(height: _kSpacing * 2),
+                    _buildContactColumn(
+                      icon: Icons.email_rounded,
+                      title: l10n?.contactsEmail ?? 'Email',
+                      content: 'info@eugeniastravelconsultancy.com',
+                      onTap: () => _launchUrl('mailto:info@lasiciliatour.com'),
+                      isTablet: isTablet,
+                    ),
+                    const SizedBox(height: _kSpacing * 2),
+                    _buildContactColumn(
+                      icon: Icons.language_rounded,
+                      title: l10n?.contactsWebsite ?? 'Sitio Web',
+                      content: 'www.eugeniastravelconsultancy.com',
+                      onTap: () => _launchUrl('https://www.eugeniastravelconsultancy.com/'),
+                      isTablet: isTablet,
+                    ),
+                    const SizedBox(height: _kSpacing * 2),
+                    _buildContactColumn(
+                      icon: Icons.location_on_rounded,
+                      title: l10n?.contactsLocation ?? 'Ubicación',
+                      content: 'Sicilia, Italia',
+                      onTap: () {},
+                      isTablet: isTablet,
+                    ),
+                  ],
+                );
+              },
             ),
           ],
         ),

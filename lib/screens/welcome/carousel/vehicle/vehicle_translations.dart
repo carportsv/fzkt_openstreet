@@ -18,7 +18,25 @@ class VehicleTranslations {
         return l10n?.vehicleVan ?? 'Van';
       case 'luxury':
         return l10n?.vehicleLuxury ?? 'Lujo';
+      case 'business':
+        return l10n?.vehicleBusiness ?? 'Business';
+      case 'minibus_8pax':
+        return l10n?.vehicleMinibus8pax ?? 'Minibus 8pax';
+      case 'bus_16pax':
+        return l10n?.vehicleBus16pax ?? 'Bus 16pax';
+      case 'bus_19pax':
+        return l10n?.vehicleBus19pax ?? 'Bus 19pax';
+      case 'bus_50pax':
+        return l10n?.vehicleBus50pax ?? 'Bus 50pax';
       default:
+        // Para tipos como 'Minivan 7pax' y 'Minivan Luxury 6pax', usar el nombre del tipo directamente
+        // o buscar una traducción específica
+        if (key.contains('minivan')) {
+          if (key.contains('luxury')) {
+            return l10n?.vehicleMinivanLuxury6pax ?? 'Minivan Luxury 6pax';
+          }
+          return l10n?.vehicleMinivan7pax ?? 'Minivan 7pax';
+        }
         return key;
     }
   }

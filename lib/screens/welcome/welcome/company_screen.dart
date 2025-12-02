@@ -9,8 +9,11 @@ import 'widgets/welcome_footer.dart';
 import 'welcome_screen.dart';
 import 'destinations_screen.dart';
 import 'contacts_screen.dart';
+import 'servicios_screen.dart';
+import 'acerca_de_screen.dart';
 import '../../../auth/login_screen.dart';
 import '../../../widgets/app_logo_header.dart';
+import '../../../l10n/app_localizations.dart';
 
 // Constants
 const _kSpacing = 16.0;
@@ -79,9 +82,10 @@ class _CompanyScreenState extends State<CompanyScreen> {
   }
 
   void _navigateToProfile() {
+    final l10n = AppLocalizations.of(context);
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Mi perfil (próximamente)')));
+    ).showSnackBar(SnackBar(content: Text(l10n?.profileComingSoon ?? 'Mi perfil (próximamente)')));
   }
 
   Future<void> _handleLogout() async {
@@ -98,9 +102,10 @@ class _CompanyScreenState extends State<CompanyScreen> {
       }
     } catch (e) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al cerrar sesión: ${e.toString()}'),
+            content: Text('${l10n?.logoutError ?? 'Error al cerrar sesión'}: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -185,6 +190,38 @@ class _CompanyScreenState extends State<CompanyScreen> {
     }
   }
 
+  void _navigateToServices() {
+    if (kDebugMode) {
+      debugPrint('[CompanyScreen] _navigateToServices llamado');
+    }
+    if (!mounted) return;
+    try {
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (context) => const ServiciosScreen()));
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[CompanyScreen] ❌ Error navegando a ServiciosScreen: $e');
+      }
+    }
+  }
+
+  void _navigateToAbout() {
+    if (kDebugMode) {
+      debugPrint('[CompanyScreen] _navigateToAbout llamado');
+    }
+    if (!mounted) return;
+    try {
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (context) => const AcercaDeScreen()));
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[CompanyScreen] ❌ Error navegando a AcercaDeScreen: $e');
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -200,6 +237,8 @@ class _CompanyScreenState extends State<CompanyScreen> {
         onHandleLogout: _handleLogout,
         onNavigateToWelcomePath: _navigateToWelcomePath,
         onNavigateToCompany: _navigateToCompany,
+        onNavigateToServices: _navigateToServices,
+        onNavigateToAbout: _navigateToAbout,
         onNavigateToDestination: _navigateToDestination,
         onNavigateToContacts: _navigateToContacts,
       ),
@@ -229,9 +268,14 @@ class _CompanyScreenState extends State<CompanyScreen> {
                                     size: 48,
                                   ),
                                   const SizedBox(height: 8),
-                                  Text(
-                                    'Imagen no disponible',
-                                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                                  Builder(
+                                    builder: (context) {
+                                      final l10n = AppLocalizations.of(context);
+                                      return Text(
+                                        l10n?.imageNotAvailable ?? 'Imagen no disponible',
+                                        style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                                      );
+                                    },
                                   ),
                                 ],
                               ),
@@ -274,6 +318,8 @@ class _CompanyScreenState extends State<CompanyScreen> {
                                   onNavigateToDestination: _navigateToDestination,
                                   onNavigateToCompany: _navigateToCompany,
                                   onNavigateToContacts: _navigateToContacts,
+                                  onNavigateToServices: _navigateToServices,
+                                  onNavigateToAbout: _navigateToAbout,
                                 ),
                               ],
                             ),
@@ -380,65 +426,80 @@ class _CompanyScreenState extends State<CompanyScreen> {
   }
 
   Widget _buildContent() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'La nostra azienda',
-          style: GoogleFonts.exo(
-            fontSize: 42,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-            height: 1.2,
-          ),
-        ),
-        const SizedBox(height: _kSpacing * 2),
-        Text(
-          'Benvenuto a Eugenia\'s Travel Consultancy, la tua soluzione definitiva per trasferimenti affidabili, eleganti e personalizzati. Con radici in Sicilia, Italia, portiamo la calda ospitalità siciliana e il fascino mediterraneo in ogni viaggio. Ci specializziamo nel fornire esperienze di trasporto eccezionali che combinano comfort, efficienza e attenzione ai dettagli.',
-          style: GoogleFonts.exo(
-            fontSize: 16,
-            color: Colors.white.withValues(alpha: 0.9),
-            height: 1.8,
-          ),
-        ),
-        const SizedBox(height: _kSpacing * 2),
-        // Características
-        _buildFeatures(),
-      ],
+    return Builder(
+      builder: (context) {
+        final l10n = AppLocalizations.of(context);
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n?.companyTitle ?? 'La nostra azienda',
+              style: GoogleFonts.exo(
+                fontSize: 42,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                height: 1.2,
+              ),
+            ),
+            const SizedBox(height: _kSpacing * 2),
+            Text(
+              l10n?.companyDescription ??
+                  'Benvenuto a Eugenia\'s Travel Consultancy, la tua soluzione definitiva per trasferimenti affidabili, eleganti e personalizzati. Con radici in Sicilia, Italia, portiamo la calda ospitalità siciliana e il fascino mediterraneo in ogni viaggio. Ci specializziamo nel fornire esperienze di trasporto eccezionali che combinano comfort, efficienza e attenzione ai dettagli.',
+              style: GoogleFonts.exo(
+                fontSize: 16,
+                color: Colors.white.withValues(alpha: 0.9),
+                height: 1.8,
+              ),
+            ),
+            const SizedBox(height: _kSpacing * 2),
+            // Características
+            _buildFeatures(),
+          ],
+        );
+      },
     );
   }
 
   Widget _buildFeatures() {
-    return Column(
-      children: [
-        _buildFeature(
-          icon: Icons.access_time,
-          title: 'Puntualità',
-          description:
-              'La puntualità riflette impegno ed efficienza, assicurando che i servizi vengano rispettati con precisione al momento stabilito.',
-        ),
-        const SizedBox(height: _kSpacing * 2),
-        _buildFeature(
-          icon: Icons.person_outline,
-          title: 'Autisti Professionisti',
-          description:
-              'I nostri autisti professionisti si distinguono per esperienza e dedizione, offrendo un servizio sicuro e di alta qualità.',
-        ),
-        const SizedBox(height: _kSpacing * 2),
-        _buildFeature(
-          icon: Icons.security,
-          title: 'Sicurezza',
-          description:
-              'La sicurezza nei viaggi e nella logistica integrale riflette il nostro impegno per la tranquillità e il benessere dei nostri clienti.',
-        ),
-        const SizedBox(height: _kSpacing * 2),
-        _buildFeature(
-          icon: Icons.verified,
-          title: 'Azienda Affidabile',
-          description:
-              'Siamo un\'azienda affidabile che unisce esperienza e professionalità per offrire un servizio di qualità e garantire la soddisfazione dei nostri clienti.',
-        ),
-      ],
+    return Builder(
+      builder: (context) {
+        final l10n = AppLocalizations.of(context);
+        return Column(
+          children: [
+            _buildFeature(
+              icon: Icons.access_time,
+              title: l10n?.companyPunctualityTitle ?? 'Puntualità',
+              description:
+                  l10n?.companyPunctualityDescription ??
+                  'La puntualità riflette impegno ed efficienza, assicurando che i servizi vengano rispettati con precisione al momento stabilito.',
+            ),
+            const SizedBox(height: _kSpacing * 2),
+            _buildFeature(
+              icon: Icons.person_outline,
+              title: l10n?.companyProfessionalDriversTitle ?? 'Autisti Professionisti',
+              description:
+                  l10n?.companyProfessionalDriversDescription ??
+                  'I nostri autisti professionisti si distinguono per esperienza e dedizione, offrendo un servizio sicuro e di alta qualità.',
+            ),
+            const SizedBox(height: _kSpacing * 2),
+            _buildFeature(
+              icon: Icons.security,
+              title: l10n?.companySecurityTitle ?? 'Sicurezza',
+              description:
+                  l10n?.companySecurityDescription ??
+                  'La sicurezza nei viaggi e nella logistica integrale riflette il nostro impegno per la tranquillità e il benessere dei nostri clienti.',
+            ),
+            const SizedBox(height: _kSpacing * 2),
+            _buildFeature(
+              icon: Icons.verified,
+              title: l10n?.companyReliableCompanyTitle ?? 'Azienda Affidabile',
+              description:
+                  l10n?.companyReliableCompanyDescription ??
+                  'Siamo un\'azienda affidabile che unisce esperienza e professionalità per offrire un servizio di qualità e garantire la soddisfazione dei nostri clienti.',
+            ),
+          ],
+        );
+      },
     );
   }
 

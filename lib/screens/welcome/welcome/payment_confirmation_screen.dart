@@ -11,6 +11,7 @@ import 'package:qr_flutter/qr_flutter.dart' as qr;
 import 'package:web/web.dart' as web;
 import '../../../auth/login_screen.dart';
 import '../../../services/ride_service.dart';
+import '../../../l10n/app_localizations.dart';
 import 'receipt_screen.dart';
 
 // Constants
@@ -156,15 +157,20 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
                 child: Icon(Icons.person_add_alt_1, size: 40, color: _kPrimaryColor),
               ),
               const SizedBox(height: _kSpacing * 2),
-              Text(
-                'Cuenta requerida',
-                style: GoogleFonts.exo(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  color: _kTextColor,
-                  letterSpacing: -0.5,
-                ),
-                textAlign: TextAlign.center,
+              Builder(
+                builder: (context) {
+                  final l10n = AppLocalizations.of(context);
+                  return Text(
+                    l10n?.accountRequired ?? 'Cuenta requerida',
+                    style: GoogleFonts.exo(
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      color: _kTextColor,
+                      letterSpacing: -0.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  );
+                },
               ),
               const SizedBox(height: _kSpacing),
               Text(
@@ -191,13 +197,18 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
                         ),
                         backgroundColor: Colors.white.withValues(alpha: 0.5),
                       ),
-                      child: Text(
-                        'Cancelar',
-                        style: GoogleFonts.exo(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey.shade700,
-                        ),
+                      child: Builder(
+                        builder: (context) {
+                          final l10n = AppLocalizations.of(context);
+                          return Text(
+                            l10n?.cancel ?? 'Cancelar',
+                            style: GoogleFonts.exo(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey.shade700,
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ),
@@ -310,7 +321,8 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
         });
 
         // Generar recibo
-        final receipt = _generateReceiptText();
+        final l10n = AppLocalizations.of(context);
+        final receipt = _generateReceiptText(l10n);
         final receiptNumber = 'REC-${DateTime.now().millisecondsSinceEpoch}';
         final now = DateTime.now();
 
@@ -353,13 +365,17 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
       if (mounted) {
         setState(() {
           _isProcessing = false;
+          final l10n = AppLocalizations.of(context);
           _paymentError = e is Exception
               ? e.toString().replaceAll('Exception: ', '')
-              : 'Error desconocido al procesar el pago';
+              : l10n?.paymentUnknownError ?? 'Error desconocido al procesar el pago';
         });
+        final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al procesar el pago: ${_paymentError ?? 'Error desconocido'}'),
+            content: Text(
+              '${l10n?.paymentProcessingError ?? 'Error al procesar el pago'}: ${_paymentError ?? l10n?.paymentUnknownError ?? 'Error desconocido'}',
+            ),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 4),
           ),
@@ -368,58 +384,62 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
     }
   }
 
-  String _generateReceiptText() {
+  String _generateReceiptText(AppLocalizations? l10n) {
     final dateFormat = DateFormat('dd/MM/yyyy HH:mm');
     final now = DateTime.now();
     final receiptNumber = 'REC-${now.millisecondsSinceEpoch}';
 
     final buffer = StringBuffer();
     buffer.writeln('═══════════════════════════════════════');
-    buffer.writeln('          RECIBO DE PAGO');
+    buffer.writeln('          ${l10n?.paymentTripSummary ?? 'RECIBO DE PAGO'}');
     buffer.writeln('═══════════════════════════════════════');
     buffer.writeln('');
-    buffer.writeln('Número de Recibo: $receiptNumber');
-    buffer.writeln('Fecha: ${dateFormat.format(now)}');
+    buffer.writeln('${l10n?.receiptNumber ?? 'Número de Recibo'}: $receiptNumber');
+    buffer.writeln('${l10n?.receiptDate ?? 'Fecha'}: ${dateFormat.format(now)}');
     buffer.writeln('');
     buffer.writeln('═══════════════════════════════════════');
-    buffer.writeln('          DETALLES DEL VIAJE');
+    buffer.writeln('          ${l10n?.receiptTripDetails ?? 'DETALLES DEL VIAJE'}');
     buffer.writeln('═══════════════════════════════════════');
     buffer.writeln('');
-    buffer.writeln('Origen: ${widget.originAddress}');
-    buffer.writeln('Destino: ${widget.destinationAddress}');
+    buffer.writeln('${l10n?.summaryOrigin ?? 'Origen'}: ${widget.originAddress}');
+    buffer.writeln('${l10n?.summaryDestination ?? 'Destino'}: ${widget.destinationAddress}');
     if (widget.distanceKm != null) {
-      buffer.writeln('Distancia: ${widget.distanceKm!.toStringAsFixed(2)} km');
+      buffer.writeln(
+        '${l10n?.summaryDistance ?? 'Distancia'}: ${widget.distanceKm!.toStringAsFixed(2)} km',
+      );
     }
-    buffer.writeln('Tipo de Vehículo: ${widget.vehicleType}');
-    buffer.writeln('Pasajeros: ${widget.passengerCount}');
+    buffer.writeln('${l10n?.formVehicleType ?? 'Tipo de Vehículo'}: ${widget.vehicleType}');
+    buffer.writeln('${l10n?.summaryPassengers ?? 'Pasajeros'}: ${widget.passengerCount}');
     if (widget.childSeats > 0) {
-      buffer.writeln('Asientos para niños: ${widget.childSeats}');
+      buffer.writeln('${l10n?.summaryChildSeats ?? 'Asientos para niños'}: ${widget.childSeats}');
     }
     buffer.writeln('');
     buffer.writeln('═══════════════════════════════════════');
-    buffer.writeln('          INFORMACIÓN DEL CLIENTE');
+    buffer.writeln('          ${l10n?.receiptClientInfo ?? 'INFORMACIÓN DEL CLIENTE'}');
     buffer.writeln('═══════════════════════════════════════');
     buffer.writeln('');
-    buffer.writeln('Nombre: ${widget.clientName}');
+    buffer.writeln('${l10n?.receiptName ?? 'Nombre'}: ${widget.clientName}');
     if (widget.clientEmail != null && widget.clientEmail!.isNotEmpty) {
-      buffer.writeln('Email: ${widget.clientEmail}');
+      buffer.writeln('${l10n?.receiptEmail ?? 'Email'}: ${widget.clientEmail}');
     }
     if (widget.clientPhone != null && widget.clientPhone!.isNotEmpty) {
-      buffer.writeln('Teléfono: ${widget.clientPhone}');
+      buffer.writeln('${l10n?.receiptPhone ?? 'Teléfono'}: ${widget.clientPhone}');
     }
     buffer.writeln('');
     buffer.writeln('═══════════════════════════════════════');
-    buffer.writeln('          RESUMEN DE PAGO');
+    buffer.writeln('          ${l10n?.receiptPaymentSummary ?? 'RESUMEN DE PAGO'}');
     buffer.writeln('═══════════════════════════════════════');
     buffer.writeln('');
-    buffer.writeln('Subtotal: \$${widget.price.toStringAsFixed(2)}');
-    buffer.writeln('Total: \$${widget.price.toStringAsFixed(2)}');
+    buffer.writeln('${l10n?.receiptSubtotal ?? 'Subtotal'}: \$${widget.price.toStringAsFixed(2)}');
+    buffer.writeln('${l10n?.receiptTotal ?? 'Total'}: \$${widget.price.toStringAsFixed(2)}');
     buffer.writeln('');
-    buffer.writeln('Método de Pago: Tarjeta');
-    buffer.writeln('Estado: Pagado');
+    buffer.writeln(
+      '${l10n?.summaryPaymentMethod ?? 'Método de Pago'}: ${l10n?.paymentCard ?? 'Tarjeta'}',
+    );
+    buffer.writeln('${l10n?.receiptStatus ?? 'Estado'}: ${l10n?.receiptPaid ?? 'Pagado'}');
     buffer.writeln('');
     buffer.writeln('═══════════════════════════════════════');
-    buffer.writeln('          ¡Gracias por su compra!');
+    buffer.writeln('          ${l10n?.receiptThankYou ?? '¡Gracias por su compra!'}');
     buffer.writeln('═══════════════════════════════════════');
 
     return buffer.toString();
@@ -558,15 +578,39 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Resumen del Viaje',
-            style: GoogleFonts.exo(fontSize: 18, fontWeight: FontWeight.bold, color: _kTextColor),
+          Builder(
+            builder: (context) {
+              final l10n = AppLocalizations.of(context);
+              return Text(
+                l10n?.paymentTripSummary ?? 'Resumen del Viaje',
+                style: GoogleFonts.exo(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: _kTextColor,
+                ),
+              );
+            },
           ),
           const SizedBox(height: _kSpacing),
-          _buildSummaryRow('Origen', widget.originAddress),
-          _buildSummaryRow('Destino', widget.destinationAddress),
-          if (widget.distanceKm != null)
-            _buildSummaryRow('Distancia', '${widget.distanceKm!.toStringAsFixed(2)} km'),
+          Builder(
+            builder: (context) {
+              final l10n = AppLocalizations.of(context);
+              return Column(
+                children: [
+                  _buildSummaryRow(l10n?.summaryOrigin ?? 'Origen', widget.originAddress),
+                  _buildSummaryRow(
+                    l10n?.summaryDestination ?? 'Destino',
+                    widget.destinationAddress,
+                  ),
+                  if (widget.distanceKm != null)
+                    _buildSummaryRow(
+                      l10n?.summaryDistance ?? 'Distancia',
+                      '${widget.distanceKm!.toStringAsFixed(2)} km',
+                    ),
+                ],
+              );
+            },
+          ),
           // Tipo de Vehículo en una sola fila con información detallada
           Padding(
             padding: const EdgeInsets.only(bottom: _kSpacing / 2),
@@ -575,15 +619,20 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
               children: [
                 SizedBox(
                   width: 180,
-                  child: Text(
-                    'Tipo de Vehículo',
-                    style: GoogleFonts.exo(
-                      fontSize: 14,
-                      color: Colors.grey.shade600,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  child: Builder(
+                    builder: (context) {
+                      final l10n = AppLocalizations.of(context);
+                      return Text(
+                        l10n?.formVehicleType ?? 'Tipo de Vehículo',
+                        style: GoogleFonts.exo(
+                          fontSize: 14,
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      );
+                    },
                   ),
                 ),
                 Expanded(
@@ -631,16 +680,40 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
               ],
             ),
           ),
-          _buildSummaryRow('Pasajeros', widget.passengerCount.toString()),
-          if (widget.childSeats > 0)
-            _buildSummaryRow('Asientos para Niños', widget.childSeats.toString()),
-          if (widget.handLuggage > 0)
-            _buildSummaryRow('Equipaje de Mano', widget.handLuggage.toString()),
-          if (widget.checkInLuggage > 0)
-            _buildSummaryRow('Equipaje de Bodega', widget.checkInLuggage.toString()),
-          const Divider(height: _kSpacing * 2),
-          // Información del pasajero
-          _buildSummaryRow('Nombre del Pasajero', widget.clientName),
+          Builder(
+            builder: (context) {
+              final l10n = AppLocalizations.of(context);
+              return Column(
+                children: [
+                  _buildSummaryRow(
+                    l10n?.summaryPassengers ?? 'Pasajeros',
+                    widget.passengerCount.toString(),
+                  ),
+                  if (widget.childSeats > 0)
+                    _buildSummaryRow(
+                      l10n?.summaryChildSeats ?? 'Asientos para Niños',
+                      widget.childSeats.toString(),
+                    ),
+                  if (widget.handLuggage > 0)
+                    _buildSummaryRow(
+                      l10n?.summaryHandLuggage ?? 'Equipaje de Mano',
+                      widget.handLuggage.toString(),
+                    ),
+                  if (widget.checkInLuggage > 0)
+                    _buildSummaryRow(
+                      l10n?.summaryCheckInLuggage ?? 'Equipaje de Bodega',
+                      widget.checkInLuggage.toString(),
+                    ),
+                  const Divider(height: _kSpacing * 2),
+                  // Información del pasajero
+                  _buildSummaryRow(
+                    l10n?.summaryPassengerName ?? 'Nombre del Pasajero',
+                    widget.clientName,
+                  ),
+                ],
+              );
+            },
+          ),
           if (widget.clientPhone != null && widget.clientPhone!.isNotEmpty)
             _buildSummaryRow('Número de Contacto', widget.clientPhone!),
           if (formattedDateTime != null) _buildSummaryRow('Fecha y Hora', formattedDateTime),
@@ -746,20 +819,34 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Método de Pago *',
-              style: GoogleFonts.exo(fontSize: 18, fontWeight: FontWeight.bold, color: _kTextColor),
+            Builder(
+              builder: (context) {
+                final l10n = AppLocalizations.of(context);
+                return Text(
+                  l10n?.summaryPaymentMethod ?? 'Método de Pago *',
+                  style: GoogleFonts.exo(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: _kTextColor,
+                  ),
+                );
+              },
             ),
             const SizedBox(height: _kSpacing),
             Row(
               children: [
                 Expanded(
                   flex: 1,
-                  child: _buildPaymentMethodOption(
-                    'card',
-                    'Tarjeta',
-                    Icons.credit_card,
-                    _selectedPaymentMethod == 'card',
+                  child: Builder(
+                    builder: (context) {
+                      final l10n = AppLocalizations.of(context);
+                      return _buildPaymentMethodOption(
+                        'card',
+                        l10n?.paymentCard ?? 'Tarjeta',
+                        Icons.credit_card,
+                        _selectedPaymentMethod == 'card',
+                      );
+                    },
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -795,11 +882,16 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   flex: 1,
-                  child: _buildPaymentMethodOption(
-                    'transfer',
-                    'Depósito',
-                    Icons.account_balance,
-                    _selectedPaymentMethod == 'transfer',
+                  child: Builder(
+                    builder: (context) {
+                      final l10n = AppLocalizations.of(context);
+                      return _buildPaymentMethodOption(
+                        'transfer',
+                        l10n?.paymentDeposit ?? 'Depósito',
+                        Icons.account_balance,
+                        _selectedPaymentMethod == 'transfer',
+                      );
+                    },
                   ),
                 ),
               ],
@@ -1217,7 +1309,12 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
                         }
                       },
                       icon: const Icon(Icons.payment, size: 20),
-                      label: const Text('Pagar con PayPal'),
+                      label: Builder(
+                        builder: (context) {
+                          final l10n = AppLocalizations.of(context);
+                          return Text(l10n?.paymentPayWithPayPal ?? 'Pagar con PayPal');
+                        },
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blue.shade700,
                         foregroundColor: Colors.white,
@@ -1508,13 +1605,18 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
           Icon(Icons.error_outline, color: Colors.red.shade600),
           const SizedBox(width: _kSpacing),
           Expanded(
-            child: Text(
-              _paymentError ?? 'Error desconocido',
-              style: GoogleFonts.exo(
-                fontSize: 14,
-                color: Colors.red.shade700,
-                fontWeight: FontWeight.w500,
-              ),
+            child: Builder(
+              builder: (context) {
+                final l10n = AppLocalizations.of(context);
+                return Text(
+                  _paymentError ?? l10n?.paymentUnknownError ?? 'Error desconocido',
+                  style: GoogleFonts.exo(
+                    fontSize: 14,
+                    color: Colors.red.shade700,
+                    fontWeight: FontWeight.w500,
+                  ),
+                );
+              },
             ),
           ),
         ],
@@ -1594,7 +1696,8 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
   // Validators
   String? _validateRequiredField(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Este campo es requerido';
+      final l10n = AppLocalizations.of(context);
+      return l10n?.commonThisFieldIsRequired ?? 'Este campo es requerido';
     }
     return null;
   }
@@ -1604,15 +1707,16 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
     if (_selectedPaymentMethod != 'card') {
       return null;
     }
+    final l10n = AppLocalizations.of(context);
     if (value == null || value.isEmpty) {
-      return 'El número de tarjeta es requerido';
+      return l10n?.paymentCardNumberRequired ?? 'El número de tarjeta es requerido';
     }
     final cleaned = value.replaceAll(RegExp(r'[\s-]'), '');
     if (cleaned.length < 13 || cleaned.length > 19) {
-      return 'Número de tarjeta inválido';
+      return l10n?.paymentInvalidCardNumber ?? 'Número de tarjeta inválido';
     }
     if (!RegExp(r'^\d+$').hasMatch(cleaned)) {
-      return 'Solo se permiten números';
+      return l10n?.paymentOnlyNumbersAllowed ?? 'Solo se permiten números';
     }
     return null;
   }
@@ -1622,17 +1726,18 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
     if (_selectedPaymentMethod != 'card') {
       return null;
     }
+    final l10n = AppLocalizations.of(context);
     if (value == null || value.isEmpty) {
-      return 'La fecha de expiración es requerida';
+      return l10n?.paymentExpiryDateRequired ?? 'La fecha de expiración es requerida';
     }
     if (!RegExp(r'^\d{2}/\d{2}$').hasMatch(value)) {
-      return 'Formato: MM/YY';
+      return l10n?.paymentExpiryFormat ?? 'Formato: MM/YY';
     }
     final parts = value.split('/');
     final month = int.tryParse(parts[0]);
     final year = int.tryParse(parts[1]);
     if (month == null || year == null || month < 1 || month > 12) {
-      return 'Fecha inválida';
+      return l10n?.paymentInvalidDate ?? 'Fecha inválida';
     }
     return null;
   }
@@ -1642,14 +1747,15 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
     if (_selectedPaymentMethod != 'card') {
       return null;
     }
+    final l10n = AppLocalizations.of(context);
     if (value == null || value.isEmpty) {
-      return 'El CVV es requerido';
+      return l10n?.paymentCvvRequired ?? 'El CVV es requerido';
     }
     if (value.length < 3 || value.length > 4) {
-      return 'CVV debe tener 3 o 4 dígitos';
+      return l10n?.paymentCvvInvalid ?? 'CVV debe tener 3 o 4 dígitos';
     }
     if (!RegExp(r'^\d+$').hasMatch(value)) {
-      return 'Solo se permiten números';
+      return l10n?.paymentOnlyNumbersAllowed ?? 'Solo se permiten números';
     }
     return null;
   }

@@ -22,6 +22,8 @@ import 'widgets/welcome_footer.dart';
 import 'company_screen.dart';
 import 'destinations_screen.dart';
 import 'contacts_screen.dart';
+import 'servicios_screen.dart';
+import 'acerca_de_screen.dart';
 
 // Constants
 const _kPrimaryColor = Color(0xFF1D4ED8);
@@ -227,9 +229,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       }
     } catch (e) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al cerrar sesión: ${e.toString()}'),
+            content: Text('${l10n?.logoutError ?? 'Error al cerrar sesión'}: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -238,9 +241,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   }
 
   void _navigateToProfile() {
+    final l10n = AppLocalizations.of(context);
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Mi perfil (próximamente)')));
+    ).showSnackBar(SnackBar(content: Text(l10n?.profileComingSoon ?? 'Mi perfil (próximamente)')));
   }
 
   Future<void> _navigateToRequestRide() async {
@@ -558,6 +562,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         onHandleLogout: _handleLogout,
         onNavigateToWelcomePath: _navigateToWelcomePath,
         onNavigateToCompany: _navigateToCompany,
+        onNavigateToServices: _navigateToServices,
+        onNavigateToAbout: _navigateToAbout,
         onNavigateToDestination: _navigateToDestination,
         onNavigateToContacts: _navigateToContacts,
       ),
@@ -753,6 +759,86 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     }
   }
 
+  /// Navega a servicios
+  void _navigateToServices() {
+    if (kDebugMode) {
+      debugPrint('[WelcomeScreen] _navigateToServices llamado');
+      debugPrint('[WelcomeScreen] Context mounted: $mounted');
+    }
+
+    if (!mounted) {
+      if (kDebugMode) {
+        debugPrint('[WelcomeScreen] ⚠️ Context no está montado, no se puede navegar');
+      }
+      return;
+    }
+
+    try {
+      if (kDebugMode) {
+        debugPrint('[WelcomeScreen] Navegando a ServiciosScreen');
+      }
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (context) => const ServiciosScreen()));
+      if (kDebugMode) {
+        debugPrint('[WelcomeScreen] ✅ Navegación iniciada');
+      }
+    } catch (e, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('[WelcomeScreen] ❌ Error navegando a ServiciosScreen: $e');
+        debugPrint('[WelcomeScreen] Stack trace: $stackTrace');
+      }
+      try {
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (context) => const ServiciosScreen()));
+      } catch (e2) {
+        if (kDebugMode) {
+          debugPrint('[WelcomeScreen] ❌ Error en fallback también: $e2');
+        }
+      }
+    }
+  }
+
+  /// Navega a Acerca de
+  void _navigateToAbout() {
+    if (kDebugMode) {
+      debugPrint('[WelcomeScreen] _navigateToAbout llamado');
+      debugPrint('[WelcomeScreen] Context mounted: $mounted');
+    }
+
+    if (!mounted) {
+      if (kDebugMode) {
+        debugPrint('[WelcomeScreen] ⚠️ Context no está montado, no se puede navegar');
+      }
+      return;
+    }
+
+    try {
+      if (kDebugMode) {
+        debugPrint('[WelcomeScreen] Navegando a AcercaDeScreen');
+      }
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (context) => const AcercaDeScreen()));
+      if (kDebugMode) {
+        debugPrint('[WelcomeScreen] ✅ Navegación iniciada');
+      }
+    } catch (e, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('[WelcomeScreen] ❌ Error navegando a AcercaDeScreen: $e');
+        debugPrint('[WelcomeScreen] Stack trace: $stackTrace');
+      }
+      try {
+        Navigator.of(context).push(MaterialPageRoute(builder: (context) => const AcercaDeScreen()));
+      } catch (e2) {
+        if (kDebugMode) {
+          debugPrint('[WelcomeScreen] ❌ Error en fallback también: $e2');
+        }
+      }
+    }
+  }
+
   /// Construye el carrusel de imágenes de fondo
 
   Widget _buildWideLayout() {
@@ -813,6 +899,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               onNavigateToDestination: _navigateToDestination,
               onNavigateToCompany: _navigateToCompany,
               onNavigateToContacts: _navigateToContacts,
+              onNavigateToServices: _navigateToServices,
+              onNavigateToAbout: _navigateToAbout,
             ),
           ],
         ),
@@ -925,7 +1013,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     Icons.shield,
                     (l10n?.verifiedDrivers != null && !l10n!.verifiedDrivers.startsWith('form.'))
                         ? l10n.verifiedDrivers
-                        : 'Conductores verificados',
+                        : AppLocalizations.of(context)?.commonVerifiedDrivers ??
+                              'Conductores verificados',
                   ),
                 ),
                 const SizedBox(width: _kSpacing),
@@ -970,6 +1059,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               onNavigateToDestination: _navigateToDestination,
               onNavigateToCompany: _navigateToCompany,
               onNavigateToContacts: _navigateToContacts,
+              onNavigateToServices: _navigateToServices,
+              onNavigateToAbout: _navigateToAbout,
             ),
           ],
         ),
@@ -1166,7 +1257,16 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         if (!silent && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('No se pudo encontrar la dirección: $address'),
+              content: Builder(
+                builder: (context) {
+                  final l10n = AppLocalizations.of(context);
+                  return Text(
+                    l10n != null
+                        ? l10n.commonAddressNotFoundWithAddress(address)
+                        : 'No se pudo encontrar la dirección: $address',
+                  );
+                },
+              ),
               duration: const Duration(seconds: 3),
             ),
           );
@@ -1180,7 +1280,16 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       if (!silent && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al buscar la dirección: $e'),
+            content: Builder(
+              builder: (context) {
+                final l10n = AppLocalizations.of(context);
+                return Text(
+                  l10n != null
+                      ? l10n.commonErrorSearchingAddress(e.toString())
+                      : 'Error al buscar la dirección: $e',
+                );
+              },
+            ),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -1279,17 +1388,22 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           ),
           const SizedBox(height: _kSpacing * 0.5),
           // Subtítulo
-          Center(
-            child: Text(
-              'Descubre por qué somos tu mejor opción para viajar',
-              style: GoogleFonts.exo(
-                fontSize: isTablet ? 13 : 12,
-                color: Colors.black87,
-                height: 1.5,
-                fontWeight: FontWeight.w400,
-              ),
-              textAlign: TextAlign.center,
-            ),
+          Builder(
+            builder: (context) {
+              final l10n = AppLocalizations.of(context);
+              return Center(
+                child: Text(
+                  l10n?.featuresSubtitle ?? 'Descubre por qué somos tu mejor opción para viajar',
+                  style: GoogleFonts.exo(
+                    fontSize: isTablet ? 13 : 12,
+                    color: Colors.black87,
+                    height: 1.5,
+                    fontWeight: FontWeight.w400,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              );
+            },
           ),
           SizedBox(height: _kSpacing * (isTablet ? 3 : 2)),
           // Grid de características
@@ -1300,15 +1414,41 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   }
 
   Widget _buildFeaturesWideLayout(bool isTablet) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(child: _buildFeatureCard(1, 'Viaje', _getFeature1Text(), isTablet)),
-        SizedBox(width: _kSpacing * 3),
-        Expanded(child: _buildFeatureCard(2, 'Experiencia', _getFeature2Text(), isTablet)),
-        SizedBox(width: _kSpacing * 3),
-        Expanded(child: _buildFeatureCard(3, 'Relax', _getFeature3Text(), isTablet)),
-      ],
+    return Builder(
+      builder: (context) {
+        final l10n = AppLocalizations.of(context);
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: _buildFeatureCard(
+                1,
+                l10n?.featuresFeature1Title ?? 'Viaje',
+                l10n?.featuresFeature1Description ?? _getFeature1Text(),
+                isTablet,
+              ),
+            ),
+            SizedBox(width: _kSpacing * 3),
+            Expanded(
+              child: _buildFeatureCard(
+                2,
+                l10n?.featuresFeature2Title ?? 'Experiencia',
+                l10n?.featuresFeature2Description ?? _getFeature2Text(),
+                isTablet,
+              ),
+            ),
+            SizedBox(width: _kSpacing * 3),
+            Expanded(
+              child: _buildFeatureCard(
+                3,
+                l10n?.featuresFeature3Title ?? 'Relax',
+                l10n?.featuresFeature3Description ?? _getFeature3Text(),
+                isTablet,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -1316,14 +1456,34 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 900;
 
-    return Column(
-      children: [
-        _buildFeatureCard(1, 'Viaje', _getFeature1Text(), isTablet),
-        SizedBox(height: _kSpacing * 2.5),
-        _buildFeatureCard(2, 'Experiencia', _getFeature2Text(), isTablet),
-        SizedBox(height: _kSpacing * 2.5),
-        _buildFeatureCard(3, 'Relax', _getFeature3Text(), isTablet),
-      ],
+    return Builder(
+      builder: (context) {
+        final l10n = AppLocalizations.of(context);
+        return Column(
+          children: [
+            _buildFeatureCard(
+              1,
+              l10n?.featuresFeature1Title ?? 'Viaje',
+              l10n?.featuresFeature1Description ?? _getFeature1Text(),
+              isTablet,
+            ),
+            SizedBox(height: _kSpacing * 2.5),
+            _buildFeatureCard(
+              2,
+              l10n?.featuresFeature2Title ?? 'Experiencia',
+              l10n?.featuresFeature2Description ?? _getFeature2Text(),
+              isTablet,
+            ),
+            SizedBox(height: _kSpacing * 2.5),
+            _buildFeatureCard(
+              3,
+              l10n?.featuresFeature3Title ?? 'Relax',
+              l10n?.featuresFeature3Description ?? _getFeature3Text(),
+              isTablet,
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -1792,13 +1952,18 @@ class _CustomTimePickerDialogState extends State<_CustomTimePickerDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                'Editar $label',
-                style: GoogleFonts.exo(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: _kTextColor,
-                ),
+              Builder(
+                builder: (context) {
+                  final l10n = AppLocalizations.of(context);
+                  return Text(
+                    l10n != null ? l10n.timePickerEditLabel(label) : 'Editar $label',
+                    style: GoogleFonts.exo(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: _kTextColor,
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: 24),
               TextField(
@@ -1857,9 +2022,14 @@ class _CustomTimePickerDialogState extends State<_CustomTimePickerDialog> {
                           borderRadius: BorderRadius.circular(_kBorderRadius),
                         ),
                       ),
-                      child: Text(
-                        'Aceptar',
-                        style: GoogleFonts.exo(fontSize: 16, fontWeight: FontWeight.bold),
+                      child: Builder(
+                        builder: (context) {
+                          final l10n = AppLocalizations.of(context);
+                          return Text(
+                            l10n?.accept ?? 'Aceptar',
+                            style: GoogleFonts.exo(fontSize: 16, fontWeight: FontWeight.bold),
+                          );
+                        },
                       ),
                     ),
                   ),
@@ -1899,9 +2069,18 @@ class _CustomTimePickerDialogState extends State<_CustomTimePickerDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             // Título
-            Text(
-              'Seleccionar hora',
-              style: GoogleFonts.exo(fontSize: 20, fontWeight: FontWeight.bold, color: _kTextColor),
+            Builder(
+              builder: (context) {
+                final l10n = AppLocalizations.of(context);
+                return Text(
+                  l10n?.timePickerSelectTime ?? 'Seleccionar hora',
+                  style: GoogleFonts.exo(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: _kTextColor,
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 24),
 
@@ -1910,12 +2089,17 @@ class _CustomTimePickerDialogState extends State<_CustomTimePickerDialog> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 // Horas
-                _buildNumberPicker(
-                  value: _selectedHour,
-                  min: 1,
-                  max: 12,
-                  onChanged: _updateHour,
-                  label: 'Hora',
+                Builder(
+                  builder: (context) {
+                    final l10n = AppLocalizations.of(context);
+                    return _buildNumberPicker(
+                      value: _selectedHour,
+                      min: 1,
+                      max: 12,
+                      onChanged: _updateHour,
+                      label: l10n?.timePickerHour ?? 'Hora',
+                    );
+                  },
                 ),
                 const SizedBox(width: 8),
 
@@ -1931,13 +2115,18 @@ class _CustomTimePickerDialogState extends State<_CustomTimePickerDialog> {
                 const SizedBox(width: 8),
 
                 // Minutos
-                _buildNumberPicker(
-                  value: _selectedMinute,
-                  min: 0,
-                  max: 59,
-                  step: 1,
-                  onChanged: _updateMinute,
-                  label: 'Minuto',
+                Builder(
+                  builder: (context) {
+                    final l10n = AppLocalizations.of(context);
+                    return _buildNumberPicker(
+                      value: _selectedMinute,
+                      min: 0,
+                      max: 59,
+                      step: 1,
+                      onChanged: _updateMinute,
+                      label: l10n?.timePickerMinute ?? 'Minuto',
+                    );
+                  },
                 ),
                 const SizedBox(width: 16),
 

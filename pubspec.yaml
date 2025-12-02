@@ -68,6 +68,7 @@ flutter:
     - assets/images/cars/suv.jpg
     - assets/images/cars/van.jpg
     - assets/images/cars/luxury.jpg
+    - assets/images/cars/flote.png
     - assets/images/background/bg_1.jpg
     - assets/images/background/bg_2.jpeg
     - assets/images/background/bg_3.jpg
@@ -76,6 +77,7 @@ flutter:
     - assets/images/empresa/city.jpg
     - assets/images/empresa/oficina.png
     - assets/images/empresa/pared.png
+    - assets/images/empresa/driver.png
     - assets/images/destinos/destination_1.jpg
     - assets/images/destinos/destination_2.jpg
     - assets/images/destinos/destination_3.jpg

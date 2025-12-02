@@ -9,9 +9,9 @@
   "nav": {
     "home": "Home",
     "company": "Company",
-    "service": "Service",
-    "rates": "Rates",
-    "destination": "Destination",
+    "service": "Services",
+    "rates": "Professionalism",
+    "destination": "Destinations",
     "contacts": "Contacts"
   },
   "form": {
@@ -35,7 +35,18 @@
     "verifiedDrivers": "Verified drivers",
     "createAccount": "Create account",
     "loginOrCreateAccount": "Sign in / Create account",
-    "accountRequiredMessage": "You need to sign in or create an account to request rides."
+    "accountRequiredMessage": "You need to sign in or create an account to request rides.",
+    "originRequired": "Origin *",
+    "destinationRequired": "Destination *",
+    "handLuggage": "Hand Luggage",
+    "checkInLuggage": "Check-in Luggage",
+    "childSeats": "Child Seats",
+    "distanceKm": "Distance (km)",
+    "priority": "Priority",
+    "additionalNotes": "Additional Notes",
+    "completeDetails": "Complete the details to request a new trip",
+    "timeFormatHint": "HH:mm (e.g: 08:30)",
+    "vehicleType": "Vehicle Type"
   },
   "auth": {
     "register": "Register",
@@ -46,11 +57,24 @@
   },
   "features": {
     "title": "Features",
+    "subtitle": "Discover why we are your best option to travel",
     "payment": "Multiple payment methods",
     "safety": "Safe and reliable trips",
     "availability": "Available 24/7",
     "support": "Customer support",
-    "quickBooking": "Quick and easy booking"
+    "quickBooking": "Quick and easy booking",
+    "feature1": {
+      "title": "Travel",
+      "description": "A trip with our service is much more than a simple journey, it is an experience full of comfort and personalized attention. Each destination becomes a journey of relaxation and unique discovery."
+    },
+    "feature2": {
+      "title": "Experience",
+      "description": "Discover a world where every trip transforms into a connection opportunity. You will live unforgettable moments, enjoying impeccable service, extraordinary destinations, and attention that takes care of every detail."
+    },
+    "feature3": {
+      "title": "Relax",
+      "description": "Every trip is a getaway created to renew body and soul. Enjoy exclusive destinations, high-end services, and special attention designed to make you experience the total relaxation you deserve."
+    }
   },
   "vehicles": {
     "economy": "Economy",
@@ -58,6 +82,13 @@
     "suv": "SUV",
     "van": "Van",
     "luxury": "Luxury",
+    "business": "Business",
+    "minivan7pax": "Minivan 7pax",
+    "minivanLuxury6pax": "Minivan Luxury 6pax",
+    "minibus8pax": "Minibus 8pax",
+    "bus16pax": "Bus 16pax",
+    "bus19pax": "Bus 19pax",
+    "bus50pax": "Bus 50pax",
     "spacious": "Spacious for groups",
     "comfortable": "Comfortable and cozy",
     "premium": "Premium experience",
@@ -68,6 +99,210 @@
     "suvDesc": "Spacious for groups",
     "vanDesc": "Perfect for large groups",
     "luxuryDesc": "Premium experience"
+  },
+  "services": {
+    "intro": "Eugenia Travel Consultancy Taxi is the leading taxi booking website that has been helping tourists and residents to find reliable airport transport services. We have been working in the market for many years, we understand the needs & demands of customers and also the expectations of taxi drivers.",
+    "privateTransfer": {
+      "title": "Private Transfer Specialists",
+      "description": "Eugenia Travel Consultancy is the airport transfer service providers who have managed the highly interactive and simple to use taxi booking website."
+    },
+    "simpleBooking": {
+      "title": "Simple Booking System",
+      "description": "Eugenia Travel Consultancy booking website has the simplest cab booking services. Here is the 3-step process that you have to follow to book your next cab."
+    },
+    "customerSatisfaction": {
+      "title": "100% Customer Satisfaction",
+      "description": "Our customer is our biggest asset. We will assure that you will be satisfied with the services that you acquire."
+    },
+    "waitingTime": {
+      "title": "Waiting Time",
+      "description": "Our customer is our biggest asset. We will assure that you will be satisfied with the services that you acquire."
+    },
+    "meetGreet": {
+      "title": "Meet And Greet Service",
+      "description": "All pickups from airport comes with Meet and Greet service, it will allow you to easily get out of the airport and be in the cab."
+    },
+    "specialServices": {
+      "title": "Special Services",
+      "description": "All our services are available at a most affordable rate to assure that you will not have to worry about your budget."
+    }
+  },
+  "company": {
+    "title": "Our Company",
+    "description": "Welcome to Eugenia's Travel Consultancy, your definitive solution for reliable, elegant and personalized transfers. With roots in Sicily, Italy, we bring warm Sicilian hospitality and Mediterranean charm to every journey. We specialize in providing exceptional transportation experiences that combine comfort, efficiency and attention to detail.",
+    "punctuality": {
+      "title": "Punctuality",
+      "description": "Punctuality reflects commitment and efficiency, ensuring that services are respected with precision at the established time."
+    },
+    "professionalDrivers": {
+      "title": "Professional Drivers",
+      "description": "Our professional drivers stand out for their experience and dedication, offering a safe and high-quality service."
+    },
+    "security": {
+      "title": "Security",
+      "description": "Security in travel and integral logistics reflects our commitment to the tranquility and well-being of our clients."
+    },
+    "reliableCompany": {
+      "title": "Reliable Company",
+      "description": "We are a reliable company that combines experience and professionalism to offer quality service and guarantee the satisfaction of our clients."
+    }
+  },
+  "about": {
+    "title": "We are here to make your journey simple and exciting for you",
+    "paragraph1": "Reliable, executive, and safe transportation services are a rare commodity nowadays. The good news is that Eugenia Travel Consultancy taxi is just a call away.",
+    "paragraph2": "Ever been in a position where you were running late and had to catch a plane at the last minute? Well, Eugenia Travel Consultancy is available for you, with a reliable taxi company number for you to dial and get your needs sorted. With us, you are assured of timely arrival. The last-minute savior indeed!",
+    "features": {
+      "longExperience": "Long-Standing Experience",
+      "topDrivers": "Top-Notch Drivers",
+      "firstClassServices": "First-Class Services",
+      "alwaysOnTime": "Always On Time",
+      "allAirportTransfers": "All Airport Transfers"
+    }
+  },
+  "common": {
+    "profileComingSoon": "My profile (coming soon)",
+    "logoutError": "Error signing out",
+    "imageNotAvailable": "Image not available",
+    "accept": "Accept"
+  },
+  "destinations": {
+    "subtitle": "Book your taxi now and travel comfortably",
+    "bookButton": "Book",
+    "ranking": "Ranking",
+    "rome": {
+      "airport": "Rome Airport",
+      "center": "Rome Center"
+    },
+    "milan": {
+      "airport": "Milan Airport",
+      "center": "Milan Center"
+    },
+    "florence": {
+      "airport": "Florence Airport",
+      "center": "Florence Center"
+    },
+    "bologna": {
+      "airport": "Bologna Airport",
+      "center": "Bologna Center"
+    },
+    "pisa": {
+      "airport": "Pisa Airport",
+      "center": "Pisa Center"
+    }
+  },
+  "timePicker": {
+    "selectTime": "Select time",
+    "hour": "Hour",
+    "minute": "Minute",
+    "editLabel": "Edit {label}"
+  },
+  "contacts": {
+    "title": "Do you have any questions?",
+    "subtitle": "We are here to help you",
+    "phone": "Phone",
+    "email": "Email",
+    "website": "Website",
+    "location": "Location"
+  },
+  "footer": {
+    "description1": "Your definitive solution for reliable, elegant and personalized transfers.",
+    "description2": "Available 24/7 to take you wherever you need.",
+    "copyright": "Copyright © {year} All rights reserved | developed by "
+  },
+  "requestRide": {
+    "requestNewRide": "Request New Ride",
+    "tripDate": "Trip Date *",
+    "tripTime": "Trip Time *",
+    "tripCost": "Trip Cost",
+    "requestRide": "Request Ride",
+    "selectDate": "Select date",
+    "selectTime": "Select time",
+    "fullName": "Full name",
+    "emailAddress": "Email address",
+    "contactNumber": "Contact number",
+    "invalidFormat": "Invalid format",
+    "invalidFormatWithExample": "Invalid format. Use HH:mm (e.g: 08:30)",
+    "signOut": "Sign out",
+    "unknownError": "Unknown error"
+  },
+  "payment": {
+    "tripSummary": "Trip Summary",
+    "processingError": "Error processing payment",
+    "unknownError": "Unknown error",
+    "invalidDate": "Invalid date",
+    "payWithPayPal": "Pay with PayPal"
+  },
+  "common": {
+    "gettingLocation": "Getting location...",
+    "vehicle": "Vehicle:",
+    "journeyFare": "Journey Fare",
+    "priceMustBeGreaterThanZero": "Price must be greater than zero",
+    "invalidDateTimeFormat": "Invalid date or time format",
+    "addressNotFound": "Could not find the address",
+    "errorSearchingAddress": "Error searching for address",
+    "understood": "Understood",
+    "user": "User",
+    "selectFromMap": "Select from map",
+    "writeOrSelectAddress": "Write or select an address",
+    "selectOption": "Select an option",
+    "pleaseCompleteAllFields": "Please complete all required fields",
+    "thisFieldIsRequired": "This field is required",
+    "enterValidEmail": "Enter a valid email",
+    "verifiedDrivers": "Verified drivers",
+    "weekDays": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    "months": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+  },
+  "payment": {
+    "tripSummary": "Trip Summary",
+    "processingError": "Error processing payment",
+    "unknownError": "Unknown error",
+    "invalidDate": "Invalid date",
+    "payWithPayPal": "Pay with PayPal",
+    "enterCardData": "Enter your card details to complete the payment",
+    "card": "Card",
+    "apple": "Apple",
+    "google": "Google",
+    "deposit": "Deposit",
+    "pay": "Pay",
+    "beneficiary": "Beneficiary",
+    "bank": "Bank",
+    "address": "Address",
+    "cardNumberRequired": "Card number is required",
+    "invalidCardNumber": "Invalid card number",
+    "onlyNumbersAllowed": "Only numbers are allowed",
+    "expiryDateRequired": "Expiry date is required",
+    "cvvRequired": "CVV is required",
+    "cvvInvalid": "CVV must have 3 or 4 digits",
+    "expiryFormat": "Format: MM/YY"
+  },
+  "summary": {
+    "origin": "Origin",
+    "destination": "Destination",
+    "distance": "Distance",
+    "passengers": "Passengers",
+    "childSeats": "Child Seats",
+    "handLuggage": "Hand Luggage",
+    "checkInLuggage": "Check-in Luggage",
+    "passengerName": "Passenger Name",
+    "contactNumber": "Contact Number",
+    "dateTime": "Date and Time",
+    "paymentMethod": "Payment Method *"
+  },
+  "receipt": {
+    "receiptNumber": "Receipt Number",
+    "receiptDate": "Date",
+    "receiptTripDetails": "TRIP DETAILS",
+    "receiptClientInfo": "CLIENT INFORMATION",
+    "receiptPaymentSummary": "PAYMENT SUMMARY",
+    "receiptName": "Name",
+    "receiptEmail": "Email",
+    "receiptPhone": "Phone",
+    "receiptSubtotal": "Subtotal",
+    "receiptTotal": "Total",
+    "receiptStatus": "Status",
+    "receiptPaid": "Paid",
+    "receiptScheduledDateTime": "Scheduled Date and Time",
+    "receiptThankYou": "Thank you for your purchase!"
   }
 }
 

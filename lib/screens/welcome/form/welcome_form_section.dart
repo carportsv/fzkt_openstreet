@@ -5,6 +5,7 @@ import 'location_input_field.dart';
 import 'date_field.dart';
 import 'time_field.dart';
 import 'passengers_field.dart';
+import '../carousel/vehicle/vehicle_translations.dart';
 
 // Constants
 const _kBorderRadius = 12.0;
@@ -80,9 +81,7 @@ class WelcomeFormSection extends StatelessWidget {
         Builder(
           builder: (context) {
             final l10n = AppLocalizations.of(context);
-            final pickupLabel = (l10n != null && !l10n.pickupLocation.startsWith('form.'))
-                ? l10n.pickupLocation
-                : 'Origen';
+            final pickupLabel = l10n?.formOrigin ?? 'Origen';
             return LocationInputField(
               label: pickupLabel,
               controller: pickupController,
@@ -100,9 +99,7 @@ class WelcomeFormSection extends StatelessWidget {
         Builder(
           builder: (context) {
             final l10n = AppLocalizations.of(context);
-            final dropoffLabel = (l10n != null && !l10n.dropoffLocation.startsWith('form.'))
-                ? l10n.dropoffLocation
-                : 'Destino';
+            final dropoffLabel = l10n?.formDestination ?? 'Destino';
             return LocationInputField(
               label: dropoffLabel,
               controller: dropoffController,
@@ -164,10 +161,10 @@ class WelcomeFormSection extends StatelessWidget {
             child: Builder(
               builder: (context) {
                 if (isGeocoding) {
-                  return const Row(
+                  return Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      SizedBox(
+                      const SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
@@ -175,20 +172,22 @@ class WelcomeFormSection extends StatelessWidget {
                           valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                         ),
                       ),
-                      SizedBox(width: 12),
-                      Text(
-                        'Buscando direcciones...',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      const SizedBox(width: 12),
+                      Builder(
+                        builder: (context) {
+                          final l10n = AppLocalizations.of(context);
+                          return Text(
+                            l10n?.commonGettingLocation ?? 'Buscando direcciones...',
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          );
+                        },
                       ),
                     ],
                   );
                 }
                 final l10n = AppLocalizations.of(context);
-                final seePricesText = (l10n != null && !l10n.seePrices.startsWith('form.'))
-                    ? l10n.seePrices
-                    : 'Ver precios';
                 return Text(
-                  seePricesText,
+                  l10n?.seePrices ?? 'Ver precios',
                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 );
               },
@@ -301,9 +300,18 @@ class WelcomeFormSection extends StatelessWidget {
                 child: Icon(Icons.directions_car, color: Colors.white, size: 24),
               ),
               const SizedBox(width: 12),
-              const Text(
-                'Tipo de Vehículo',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
+              Builder(
+                builder: (context) {
+                  final l10n = AppLocalizations.of(context);
+                  return Text(
+                    l10n?.formVehicleType ?? 'Tipo de Vehículo',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.white,
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -336,18 +344,26 @@ class WelcomeFormSection extends StatelessWidget {
                   .map(
                     (v) => DropdownMenuItem<String>(
                       value: v['type'] as String,
-                      child: Row(
-                        children: [
-                          Icon(v['icon'] as IconData, color: Colors.black87, size: 20),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              v['name'] as String,
-                              style: const TextStyle(color: Colors.black87, fontSize: 14),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
+                      child: Builder(
+                        builder: (context) {
+                          final vehicleName = VehicleTranslations.getVehicleName(
+                            v['type'] as String,
+                            context,
+                          );
+                          return Row(
+                            children: [
+                              Icon(v['icon'] as IconData, color: Colors.black87, size: 20),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  vehicleName,
+                                  style: const TextStyle(color: Colors.black87, fontSize: 14),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                     ),
                   )
@@ -368,32 +384,37 @@ class WelcomeFormSection extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 1),
             ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _buildVehicleDetail(
-                    icon: Icons.people,
-                    label: 'Pasajeros',
-                    value: '${selectedVehicle['passengers']}',
-                  ),
-                ),
-                Container(width: 1, height: 30, color: Colors.white.withValues(alpha: 0.3)),
-                Expanded(
-                  child: _buildVehicleDetail(
-                    icon: Icons.luggage,
-                    label: 'Equipaje de mano',
-                    value: '${selectedVehicle['handLuggage']}',
-                  ),
-                ),
-                Container(width: 1, height: 30, color: Colors.white.withValues(alpha: 0.3)),
-                Expanded(
-                  child: _buildVehicleDetail(
-                    icon: Icons.luggage_outlined,
-                    label: 'Equipaje facturado',
-                    value: '${selectedVehicle['checkInLuggage']}',
-                  ),
-                ),
-              ],
+            child: Builder(
+              builder: (context) {
+                final l10n = AppLocalizations.of(context);
+                return Row(
+                  children: [
+                    Expanded(
+                      child: _buildVehicleDetail(
+                        icon: Icons.people,
+                        label: l10n?.summaryPassengers ?? 'Pasajeros',
+                        value: '${selectedVehicle['passengers']}',
+                      ),
+                    ),
+                    Container(width: 1, height: 30, color: Colors.white.withValues(alpha: 0.3)),
+                    Expanded(
+                      child: _buildVehicleDetail(
+                        icon: Icons.luggage,
+                        label: l10n?.summaryHandLuggage ?? 'Equipaje de mano',
+                        value: '${selectedVehicle['handLuggage']}',
+                      ),
+                    ),
+                    Container(width: 1, height: 30, color: Colors.white.withValues(alpha: 0.3)),
+                    Expanded(
+                      child: _buildVehicleDetail(
+                        icon: Icons.luggage_outlined,
+                        label: l10n?.summaryCheckInLuggage ?? 'Equipaje facturado',
+                        value: '${selectedVehicle['checkInLuggage']}',
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ],

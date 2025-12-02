@@ -104,6 +104,15 @@
   </div>
   
   <script>
+    // Redirigir a /welcome si estamos en la raíz
+    (function() {
+      const currentPath = window.location.pathname;
+      if (currentPath === '/' || currentPath === '/index.html') {
+        window.location.replace('/welcome');
+        return;
+      }
+    })();
+    
     // Asegurar que la splash se muestre inmediatamente
     (function() {
       const splash = document.getElementById('splash-screen');

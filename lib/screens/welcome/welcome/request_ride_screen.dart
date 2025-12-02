@@ -427,7 +427,7 @@ class _RequestRideScreenState extends State<RequestRideScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Error al cerrar sesión: ${e is Exception ? e.toString() : 'Error desconocido'}',
+              '${AppLocalizations.of(context)?.logoutError ?? 'Error al cerrar sesión'}: ${e is Exception ? e.toString() : AppLocalizations.of(context)?.requestRideUnknownError ?? 'Error desconocido'}',
             ),
             backgroundColor: Colors.red,
           ),
@@ -437,9 +437,16 @@ class _RequestRideScreenState extends State<RequestRideScreen> {
   }
 
   void _navigateToProfile() {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Mi perfil (próximamente)')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Builder(
+          builder: (context) {
+            final l10n = AppLocalizations.of(context);
+            return Text(l10n?.profileComingSoon ?? 'Mi perfil (próximamente)');
+          },
+        ),
+      ),
+    );
   }
 
   void _showValidationErrorDialog(String errorMessage, List<String> missingFields) {
@@ -561,13 +568,18 @@ class _RequestRideScreenState extends State<RequestRideScreen> {
                       borderRadius: BorderRadius.circular(_kBorderRadius),
                     ),
                   ),
-                  child: Text(
-                    'Entendido',
-                    style: GoogleFonts.exo(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.2,
-                    ),
+                  child: Builder(
+                    builder: (context) {
+                      final l10n = AppLocalizations.of(context);
+                      return Text(
+                        l10n?.commonUnderstood ?? 'Entendido',
+                        style: GoogleFonts.exo(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.2,
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),
@@ -906,13 +918,18 @@ class _RequestRideScreenState extends State<RequestRideScreen> {
                                 child: Icon(Icons.logout, color: Colors.red.shade600, size: 20),
                               ),
                               const SizedBox(width: 12),
-                              Text(
-                                'Cerrar sesión',
-                                style: GoogleFonts.exo(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.red.shade600,
-                                ),
+                              Builder(
+                                builder: (context) {
+                                  final l10n = AppLocalizations.of(context);
+                                  return Text(
+                                    l10n?.requestRideSignOut ?? 'Cerrar sesión',
+                                    style: GoogleFonts.exo(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.red.shade600,
+                                    ),
+                                  );
+                                },
                               ),
                             ],
                           ),
@@ -1028,14 +1045,19 @@ class _RequestRideScreenState extends State<RequestRideScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Solicitar Nuevo Viaje',
-                  style: GoogleFonts.exo(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: _kTextColor,
-                    letterSpacing: -0.5,
-                  ),
+                Builder(
+                  builder: (context) {
+                    final l10n = AppLocalizations.of(context);
+                    return Text(
+                      l10n?.requestRideRequestNewRide ?? 'Solicitar Nuevo Viaje',
+                      style: GoogleFonts.exo(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: _kTextColor,
+                        letterSpacing: -0.5,
+                      ),
+                    );
+                  },
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -1057,7 +1079,7 @@ class _RequestRideScreenState extends State<RequestRideScreen> {
         children: [
           // Location Fields with autocomplete
           _buildAddressField(
-            label: 'Origen *',
+            label: AppLocalizations.of(context)?.formOriginRequired ?? 'Origen *',
             controller: _originController,
             focusNode: _originFocusNode,
             icon: Icons.location_on,
@@ -1066,7 +1088,7 @@ class _RequestRideScreenState extends State<RequestRideScreen> {
           ),
 
           _buildAddressField(
-            label: 'Destino *',
+            label: AppLocalizations.of(context)?.formDestinationRequired ?? 'Destino *',
             controller: _destinationController,
             focusNode: _destinationFocusNode,
             icon: Icons.flag,
@@ -1083,7 +1105,7 @@ class _RequestRideScreenState extends State<RequestRideScreen> {
             children: [
               Expanded(
                 child: _buildDropdownFormField(
-                  label: 'Passenger',
+                  label: AppLocalizations.of(context)?.formPassenger ?? 'Passenger',
                   value: _passengerCount.toString(),
                   items: List.generate(8, (i) => (i + 1).toString()),
                   onChanged: (val) => setState(() => _passengerCount = int.parse(val!)),
@@ -1092,7 +1114,7 @@ class _RequestRideScreenState extends State<RequestRideScreen> {
               const SizedBox(width: _kSpacing),
               Expanded(
                 child: _buildDropdownFormField(
-                  label: 'Hand Luggage',
+                  label: AppLocalizations.of(context)?.formHandLuggage ?? 'Hand Luggage',
                   value: _handLuggage.toString(),
                   items: List.generate(5, (i) => i.toString()),
                   onChanged: (val) => setState(() => _handLuggage = int.parse(val!)),
@@ -1101,7 +1123,7 @@ class _RequestRideScreenState extends State<RequestRideScreen> {
               const SizedBox(width: _kSpacing),
               Expanded(
                 child: _buildDropdownFormField(
-                  label: 'Check-in Luggage',
+                  label: AppLocalizations.of(context)?.formCheckInLuggage ?? 'Check-in Luggage',
                   value: _checkInLuggage.toString(),
                   items: List.generate(6, (i) => i.toString()),
                   onChanged: (val) => setState(() => _checkInLuggage = int.parse(val!)),
@@ -1110,7 +1132,7 @@ class _RequestRideScreenState extends State<RequestRideScreen> {
               const SizedBox(width: _kSpacing),
               Expanded(
                 child: _buildDropdownFormField(
-                  label: 'Child Seats',
+                  label: AppLocalizations.of(context)?.formChildSeats ?? 'Child Seats',
                   value: _childSeats.toString(),
                   items: List.generate(4, (i) => i.toString()),
                   onChanged: (val) => setState(() => _childSeats = int.parse(val!)),
@@ -1125,18 +1147,19 @@ class _RequestRideScreenState extends State<RequestRideScreen> {
           _buildSectionHeader('Passenger Details'),
           const SizedBox(height: _kSpacing),
           _buildTextFormField(
-            label: 'Full name *',
+            label: '${AppLocalizations.of(context)?.requestRideFullName ?? 'Nombre completo'} *',
             controller: _clientNameController,
             validator: _validateRequiredField,
           ),
           _buildTextFormField(
-            label: 'Email address *',
+            label: '${AppLocalizations.of(context)?.requestRideEmailAddress ?? 'Email address'} *',
             controller: _clientEmailController,
             keyboardType: TextInputType.emailAddress,
             validator: _validateEmail,
           ),
           _buildTextFormField(
-            label: 'Contact number *',
+            label:
+                '${AppLocalizations.of(context)?.requestRideContactNumber ?? 'Contact number'} *',
             controller: _clientPhoneController,
             keyboardType: TextInputType.phone,
             validator: _validateRequiredField,
@@ -1149,7 +1172,7 @@ class _RequestRideScreenState extends State<RequestRideScreen> {
             children: [
               Expanded(
                 child: _buildTextFormField(
-                  label: 'Distancia (km)',
+                  label: AppLocalizations.of(context)?.formDistanceKm ?? 'Distancia (km)',
                   controller: _distanceController,
                   isNumeric: true,
                   readOnly: true,
@@ -1162,18 +1185,28 @@ class _RequestRideScreenState extends State<RequestRideScreen> {
           Row(
             children: [
               Expanded(
-                child: _buildDatePickerField(
-                  label: 'Fecha del Viaje *',
-                  controller: _dateController,
-                  validator: _validateRequiredDate,
+                child: Builder(
+                  builder: (context) {
+                    final l10n = AppLocalizations.of(context);
+                    return _buildDatePickerField(
+                      label: l10n?.requestRideTripDate ?? 'Fecha del Viaje *',
+                      controller: _dateController,
+                      validator: _validateRequiredDate,
+                    );
+                  },
                 ),
               ),
               const SizedBox(width: _kSpacing),
               Expanded(
-                child: _buildTimePickerField(
-                  label: 'Hora del Viaje *',
-                  controller: _timeController,
-                  validator: _validateRequiredTime,
+                child: Builder(
+                  builder: (context) {
+                    final l10n = AppLocalizations.of(context);
+                    return _buildTimePickerField(
+                      label: l10n?.requestRideTripTime ?? 'Hora del Viaje *',
+                      controller: _timeController,
+                      validator: _validateRequiredTime,
+                    );
+                  },
                 ),
               ),
             ],
@@ -1181,7 +1214,7 @@ class _RequestRideScreenState extends State<RequestRideScreen> {
 
           // Priority Dropdown
           _buildDropdownFormField(
-            label: 'Prioridad',
+            label: AppLocalizations.of(context)?.formPriority ?? 'Prioridad',
             value: _selectedPriority,
             items: const ['normal', 'low', 'high', 'urgent'],
             onChanged: (val) => setState(() => _selectedPriority = val!),
@@ -1197,7 +1230,12 @@ class _RequestRideScreenState extends State<RequestRideScreen> {
           const SizedBox(height: _kSpacing * 1.5),
 
           // Fare Display Section
-          _buildSectionHeader('Costo del Viaje'),
+          Builder(
+            builder: (context) {
+              final l10n = AppLocalizations.of(context);
+              return _buildSectionHeader(l10n?.requestRideTripCost ?? 'Costo del Viaje');
+            },
+          ),
           const SizedBox(height: _kSpacing),
           _buildFareDisplay(),
 
@@ -1242,13 +1280,21 @@ class _RequestRideScreenState extends State<RequestRideScreen> {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(_kBorderRadius),
             child: _currentLocation == null && _isLoadingLocation
-                ? const Center(
+                ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        CircularProgressIndicator(),
-                        SizedBox(height: 16),
-                        Text('Obteniendo ubicación...', style: TextStyle(color: Colors.grey)),
+                        const CircularProgressIndicator(),
+                        const SizedBox(height: 16),
+                        Builder(
+                          builder: (context) {
+                            final l10n = AppLocalizations.of(context);
+                            return Text(
+                              l10n?.commonGettingLocation ?? 'Obteniendo ubicación...',
+                              style: const TextStyle(color: Colors.grey),
+                            );
+                          },
+                        ),
                       ],
                     ),
                   )
@@ -1385,11 +1431,14 @@ class _RequestRideScreenState extends State<RequestRideScreen> {
               ),
               suffixIcon: IconButton(
                 icon: Icon(Icons.map, size: 20, color: _kPrimaryColor),
-                tooltip: 'Seleccionar del mapa',
+                tooltip:
+                    AppLocalizations.of(context)?.commonSelectFromMap ?? 'Seleccionar del mapa',
                 onPressed: () => _selectFromMap(type),
               ),
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              hintText: 'Escribe o selecciona una dirección',
+              hintText:
+                  AppLocalizations.of(context)?.commonWriteOrSelectAddress ??
+                  'Escribe o selecciona una dirección',
               hintStyle: GoogleFonts.exo(fontSize: 14, color: Colors.grey.shade400),
             ),
             validator: validator,
@@ -1510,13 +1559,18 @@ class _RequestRideScreenState extends State<RequestRideScreen> {
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
-            child: Text(
-              'Cancelar',
-              style: GoogleFonts.exo(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey.shade700,
-              ),
+            child: Builder(
+              builder: (context) {
+                final l10n = AppLocalizations.of(context);
+                return Text(
+                  l10n?.cancel ?? 'Cancelar',
+                  style: GoogleFonts.exo(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade700,
+                  ),
+                );
+              },
             ),
           ),
 
@@ -1538,13 +1592,18 @@ class _RequestRideScreenState extends State<RequestRideScreen> {
               children: [
                 const Icon(Icons.check_circle, size: 20),
                 const SizedBox(width: 8),
-                Text(
-                  'Solicitar Viaje',
-                  style: GoogleFonts.exo(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                Builder(
+                  builder: (context) {
+                    final l10n = AppLocalizations.of(context);
+                    return Text(
+                      l10n?.requestRideRequestRide ?? 'Solicitar Viaje',
+                      style: GoogleFonts.exo(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
@@ -1680,17 +1739,24 @@ class _RequestRideScreenState extends State<RequestRideScreen> {
                               ),
                             ),
                             const SizedBox(height: 2),
-                            Text(
-                              selectedDate != null
-                                  ? DateFormat('dd/MM/yyyy').format(selectedDate)
-                                  : 'Seleccionar fecha',
-                              style: GoogleFonts.exo(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: selectedDate != null ? _kTextColor : Colors.grey.shade400,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            Builder(
+                              builder: (context) {
+                                final l10n = AppLocalizations.of(context);
+                                return Text(
+                                  selectedDate != null
+                                      ? DateFormat('dd/MM/yyyy').format(selectedDate)
+                                      : l10n?.requestRideSelectDate ?? 'Seleccionar fecha',
+                                  style: GoogleFonts.exo(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: selectedDate != null
+                                        ? _kTextColor
+                                        : Colors.grey.shade400,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                );
+                              },
                             ),
                           ],
                         ),
@@ -1795,7 +1861,7 @@ class _RequestRideScreenState extends State<RequestRideScreen> {
             IconButton(
               icon: Icon(Icons.access_time, color: _kPrimaryColor, size: 20),
               onPressed: _showTimePicker,
-              tooltip: 'Seleccionar hora',
+              tooltip: AppLocalizations.of(context)?.requestRideSelectTime ?? 'Seleccionar hora',
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
             ),
@@ -1867,9 +1933,14 @@ class _RequestRideScreenState extends State<RequestRideScreen> {
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         ),
         initialValue: validValue, // Usar 'initialValue' para establecer el valor inicial
-        hint: Text(
-          'Seleccione una opción',
-          style: GoogleFonts.exo(color: Colors.grey.shade600, fontSize: 16),
+        hint: Builder(
+          builder: (context) {
+            final l10n = AppLocalizations.of(context);
+            return Text(
+              l10n?.commonSelectOption ?? 'Seleccione una opción',
+              style: GoogleFonts.exo(color: Colors.grey.shade600, fontSize: 16),
+            );
+          },
         ),
         items: dropdownItems,
         onChanged: onChanged,
@@ -1966,7 +2037,15 @@ class _RequestRideScreenState extends State<RequestRideScreen> {
       ),
       child: Row(
         children: [
-          const Text('Vehicle:-', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          Builder(
+            builder: (context) {
+              final l10n = AppLocalizations.of(context);
+              return Text(
+                l10n?.commonVehicle ?? 'Vehicle:-',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              );
+            },
+          ),
           const SizedBox(width: 12),
           // Vehicle icon placeholder
           Container(
@@ -2078,7 +2157,15 @@ class _RequestRideScreenState extends State<RequestRideScreen> {
       ),
       child: Row(
         children: [
-          const Text('Journey Fare', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          Builder(
+            builder: (context) {
+              final l10n = AppLocalizations.of(context);
+              return Text(
+                l10n?.commonJourneyFare ?? 'Journey Fare',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              );
+            },
+          ),
           const Spacer(),
           SizedBox(
             width: 150,
@@ -2217,26 +2304,27 @@ class _RequestRideScreenState extends State<RequestRideScreen> {
       // Identificar qué campos están vacíos o inválidos
       final missingFields = <String>[];
 
+      final l10n = AppLocalizations.of(context);
       if (_originController.text.trim().isEmpty) {
-        missingFields.add('Origen');
+        missingFields.add(l10n?.formOrigin ?? 'Origen');
       }
       if (_destinationController.text.trim().isEmpty) {
-        missingFields.add('Destino');
+        missingFields.add(l10n?.formDestination ?? 'Destino');
       }
       if (_clientNameController.text.trim().isEmpty) {
-        missingFields.add('Nombre completo');
+        missingFields.add(l10n?.requestRideFullName ?? 'Nombre completo');
       }
       if (_clientEmailController.text.trim().isEmpty) {
-        missingFields.add('Email address');
+        missingFields.add(l10n?.requestRideEmailAddress ?? 'Email address');
       }
       if (_clientPhoneController.text.trim().isEmpty) {
-        missingFields.add('Contact number');
+        missingFields.add(l10n?.requestRideContactNumber ?? 'Contact number');
       }
       if (_dateController.text.trim().isEmpty) {
-        missingFields.add('Fecha del Viaje');
+        missingFields.add(l10n?.requestRideTripDate ?? 'Fecha del Viaje');
       }
       if (_timeController.text.trim().isEmpty) {
-        missingFields.add('Hora del Viaje');
+        missingFields.add(l10n?.requestRideTripTime ?? 'Hora del Viaje');
       }
 
       // Mostrar mensaje de error con los campos faltantes
@@ -2281,8 +2369,15 @@ class _RequestRideScreenState extends State<RequestRideScreen> {
     // Validar precio
     if (price == null || price <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('El precio debe ser mayor a cero'),
+        SnackBar(
+          content: Builder(
+            builder: (context) {
+              final l10n = AppLocalizations.of(context);
+              return Text(
+                l10n?.commonPriceMustBeGreaterThanZero ?? 'El precio debe ser mayor a cero',
+              );
+            },
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -2296,8 +2391,15 @@ class _RequestRideScreenState extends State<RequestRideScreen> {
         scheduledDateTime = DateTime.parse('${scheduledDate}T$scheduledTime');
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Formato de fecha u hora inválido'),
+          SnackBar(
+            content: Builder(
+              builder: (context) {
+                final l10n = AppLocalizations.of(context);
+                return Text(
+                  l10n?.commonInvalidDateTimeFormat ?? 'Formato de fecha u hora inválido',
+                );
+              },
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -2369,15 +2471,16 @@ class _RequestRideScreenState extends State<RequestRideScreen> {
       return 'Este campo es requerido';
     }
     // Validar formato HH:mm
+    final l10n = AppLocalizations.of(context);
     final timeRegex = RegExp(r'^([0-1]?[0-9]|2[0-3]):([0-5]?[0-9])$');
     if (!timeRegex.hasMatch(value)) {
-      return 'Formato inválido. Use HH:mm (ej: 08:30)';
+      return l10n?.requestRideInvalidFormatWithExample ?? 'Formato inválido. Use HH:mm (ej: 08:30)';
     }
     final parts = value.split(':');
     final hour = int.tryParse(parts[0]);
     final minute = int.tryParse(parts[1]);
     if (hour == null || minute == null) {
-      return 'Formato inválido';
+      return l10n?.requestRideInvalidFormat ?? 'Formato inválido';
     }
     if (hour < 0 || hour > 23) {
       return 'La hora debe estar entre 00 y 23';
@@ -2800,7 +2903,16 @@ class _RequestRideScreenState extends State<RequestRideScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('No se pudo encontrar la dirección: $address'),
+              content: Builder(
+                builder: (context) {
+                  final l10n = AppLocalizations.of(context);
+                  return Text(
+                    l10n != null
+                        ? l10n.commonAddressNotFoundWithAddress(address)
+                        : 'No se pudo encontrar la dirección: $address',
+                  );
+                },
+              ),
               duration: const Duration(seconds: 3),
             ),
           );
@@ -2813,7 +2925,16 @@ class _RequestRideScreenState extends State<RequestRideScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al buscar la dirección: $e'),
+            content: Builder(
+              builder: (context) {
+                final l10n = AppLocalizations.of(context);
+                return Text(
+                  l10n != null
+                      ? l10n.commonErrorSearchingAddress(e.toString())
+                      : 'Error al buscar la dirección: $e',
+                );
+              },
+            ),
             duration: const Duration(seconds: 3),
           ),
         );

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:web/web.dart' as web;
+import '../../../l10n/app_localizations.dart';
 
 // Constants
 const _kPrimaryColor = Color(0xFF1D4ED8);
@@ -598,21 +599,48 @@ class ReceiptScreen extends StatelessWidget {
         const SizedBox(height: _kSpacing * 2),
 
         // Detalles del viaje
-        _buildSectionTitle('DETALLES DEL VIAJE'),
-        const SizedBox(height: _kSpacing),
-        if (originAddress != null) _buildDetailRow('Origen', originAddress!),
-        if (destinationAddress != null) _buildDetailRow('Destino', destinationAddress!),
-        if (distanceKm != null)
-          _buildDetailRow('Distancia', '${distanceKm!.toStringAsFixed(2)} km'),
-        if (vehicleType != null) _buildDetailRow('Tipo de Vehículo', vehicleType!),
-        if (passengerCount != null) _buildDetailRow('Pasajeros', passengerCount.toString()),
-        if (childSeats != null && childSeats! > 0)
-          _buildDetailRow('Asientos para Niños', childSeats.toString()),
+        Builder(
+          builder: (context) {
+            final l10n = AppLocalizations.of(context);
+            return Column(
+              children: [
+                _buildSectionTitle(l10n?.receiptTripDetails ?? 'DETALLES DEL VIAJE'),
+                const SizedBox(height: _kSpacing),
+                if (originAddress != null)
+                  _buildDetailRow(l10n?.summaryOrigin ?? 'Origen', originAddress!),
+                if (destinationAddress != null)
+                  _buildDetailRow(l10n?.summaryDestination ?? 'Destino', destinationAddress!),
+                if (distanceKm != null)
+                  _buildDetailRow(
+                    l10n?.summaryDistance ?? 'Distancia',
+                    '${distanceKm!.toStringAsFixed(2)} km',
+                  ),
+                if (vehicleType != null)
+                  _buildDetailRow(l10n?.formVehicleType ?? 'Tipo de Vehículo', vehicleType!),
+                if (passengerCount != null)
+                  _buildDetailRow(
+                    l10n?.summaryPassengers ?? 'Pasajeros',
+                    passengerCount.toString(),
+                  ),
+                if (childSeats != null && childSeats! > 0)
+                  _buildDetailRow(
+                    l10n?.summaryChildSeats ?? 'Asientos para Niños',
+                    childSeats.toString(),
+                  ),
+              ],
+            );
+          },
+        ),
         if (scheduledDate != null || scheduledTime != null) ...[
           const SizedBox(height: _kSpacing),
-          _buildDetailRow(
-            'Fecha y Hora Programada',
-            '${scheduledDate != null ? dateFormat.format(scheduledDate!) : "N/A"} ${scheduledTime != null ? scheduledTime! : ""}',
+          Builder(
+            builder: (context) {
+              final l10n = AppLocalizations.of(context);
+              return _buildDetailRow(
+                l10n?.receiptScheduledDateTime ?? 'Fecha y Hora Programada',
+                '${scheduledDate != null ? dateFormat.format(scheduledDate!) : "N/A"} ${scheduledTime != null ? scheduledTime! : ""}',
+              );
+            },
           ),
         ],
 
@@ -622,24 +650,58 @@ class ReceiptScreen extends StatelessWidget {
 
         // Información del cliente
         if (clientName != null || clientEmail != null || clientPhone != null) ...[
-          _buildSectionTitle('INFORMACIÓN DEL CLIENTE'),
-          const SizedBox(height: _kSpacing),
-          if (clientName != null) _buildDetailRow('Nombre', clientName!),
-          if (clientEmail != null) _buildDetailRow('Email', clientEmail!),
-          if (clientPhone != null) _buildDetailRow('Teléfono', clientPhone!),
+          Builder(
+            builder: (context) {
+              final l10n = AppLocalizations.of(context);
+              return Column(
+                children: [
+                  _buildSectionTitle(l10n?.receiptClientInfo ?? 'INFORMACIÓN DEL CLIENTE'),
+                  const SizedBox(height: _kSpacing),
+                  if (clientName != null)
+                    _buildDetailRow(l10n?.receiptName ?? 'Nombre', clientName!),
+                  if (clientEmail != null)
+                    _buildDetailRow(l10n?.receiptEmail ?? 'Email', clientEmail!),
+                  if (clientPhone != null)
+                    _buildDetailRow(l10n?.receiptPhone ?? 'Teléfono', clientPhone!),
+                ],
+              );
+            },
+          ),
           const SizedBox(height: _kSpacing * 2),
           Divider(color: Colors.grey.shade300, thickness: 1),
           const SizedBox(height: _kSpacing * 2),
         ],
 
         // Resumen de pago
-        _buildSectionTitle('RESUMEN DE PAGO'),
-        const SizedBox(height: _kSpacing),
-        _buildDetailRow('Subtotal', '€${totalAmount.toStringAsFixed(2)}'),
-        _buildDetailRow('Total', '€${totalAmount.toStringAsFixed(2)}'),
-        const SizedBox(height: _kSpacing),
-        _buildDetailRow('Método de Pago', _getPaymentMethodDisplay()),
-        _buildDetailRow('Estado', 'Pagado', isSuccess: true),
+        Builder(
+          builder: (context) {
+            final l10n = AppLocalizations.of(context);
+            return Column(
+              children: [
+                _buildSectionTitle(l10n?.receiptPaymentSummary ?? 'RESUMEN DE PAGO'),
+                const SizedBox(height: _kSpacing),
+                _buildDetailRow(
+                  l10n?.receiptSubtotal ?? 'Subtotal',
+                  '€${totalAmount.toStringAsFixed(2)}',
+                ),
+                _buildDetailRow(
+                  l10n?.receiptTotal ?? 'Total',
+                  '€${totalAmount.toStringAsFixed(2)}',
+                ),
+                const SizedBox(height: _kSpacing),
+                _buildDetailRow(
+                  l10n?.summaryPaymentMethod ?? 'Método de Pago',
+                  _getPaymentMethodDisplay(),
+                ),
+                _buildDetailRow(
+                  l10n?.receiptStatus ?? 'Estado',
+                  l10n?.receiptPaid ?? 'Pagado',
+                  isSuccess: true,
+                ),
+              ],
+            );
+          },
+        ),
 
         const SizedBox(height: _kSpacing * 2),
         Divider(color: Colors.grey.shade300, thickness: 1),

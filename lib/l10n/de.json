@@ -9,9 +9,9 @@
   "nav": {
     "home": "Startseite",
     "company": "Unternehmen",
-    "service": "Service",
-    "rates": "Tarife",
-    "destination": "Ziel",
+    "service": "Services",
+    "rates": "Professionalität",
+    "destination": "Ziele",
     "contacts": "Kontakte"
   },
   "form": {
@@ -35,7 +35,18 @@
     "verifiedDrivers": "Verifizierte Fahrer",
     "createAccount": "Konto erstellen",
     "loginOrCreateAccount": "Anmelden / Konto erstellen",
-    "accountRequiredMessage": "Sie müssen sich anmelden oder ein Konto erstellen, um Fahrten anzufordern."
+    "accountRequiredMessage": "Sie müssen sich anmelden oder ein Konto erstellen, um Fahrten anzufordern.",
+    "originRequired": "Ursprung *",
+    "destinationRequired": "Ziel *",
+    "handLuggage": "Handgepäck",
+    "checkInLuggage": "Aufgegebenes Gepäck",
+    "childSeats": "Kindersitze",
+    "distanceKm": "Entfernung (km)",
+    "priority": "Priorität",
+    "additionalNotes": "Zusätzliche Notizen",
+    "completeDetails": "Vervollständigen Sie die Details, um eine neue Fahrt anzufordern",
+    "timeFormatHint": "HH:mm (z.B: 08:30)",
+    "vehicleType": "Fahrzeugtyp"
   },
   "auth": {
     "register": "Registrieren",
@@ -46,11 +57,24 @@
   },
   "features": {
     "title": "Funktionen",
+    "subtitle": "Entdecken Sie, warum wir Ihre beste Option zum Reisen sind",
     "payment": "Mehrere Zahlungsmethoden",
     "safety": "Sichere und zuverlässige Fahrten",
     "availability": "Verfügbar 24/7",
     "support": "Kundensupport",
-    "quickBooking": "Schnelle und einfache Buchung"
+    "quickBooking": "Schnelle und einfache Buchung",
+    "feature1": {
+      "title": "Reise",
+      "description": "Eine Reise mit unserem Service ist viel mehr als eine einfache Fahrt, es ist eine Erfahrung voller Komfort und persönlicher Aufmerksamkeit. Jedes Ziel wird zu einer Reise der Entspannung und einzigartigen Entdeckung."
+    },
+    "feature2": {
+      "title": "Erfahrung",
+      "description": "Entdecken Sie eine Welt, in der sich jede Reise in eine Verbindungsmöglichkeit verwandelt. Sie werden unvergessliche Momente erleben und einen makellosen Service, außergewöhnliche Ziele und eine Aufmerksamkeit genießen, die sich um jedes Detail kümmert."
+    },
+    "feature3": {
+      "title": "Entspannung",
+      "description": "Jede Reise ist ein Ausflug, der geschaffen wurde, um Körper und Seele zu erneuern. Genießen Sie exklusive Ziele, hochwertige Dienstleistungen und besondere Aufmerksamkeit, die darauf ausgelegt ist, Ihnen die totale Entspannung zu ermöglichen, die Sie verdienen."
+    }
   },
   "vehicles": {
     "economy": "Wirtschaft",
@@ -58,6 +82,13 @@
     "suv": "SUV",
     "van": "Van",
     "luxury": "Luxus",
+    "business": "Business",
+    "minivan7pax": "Minivan 7pax",
+    "minivanLuxury6pax": "Minivan Luxury 6pax",
+    "minibus8pax": "Minibus 8pax",
+    "bus16pax": "Bus 16pax",
+    "bus19pax": "Bus 19pax",
+    "bus50pax": "Bus 50pax",
     "spacious": "Geräumig für Gruppen",
     "comfortable": "Komfortabel und gemütlich",
     "premium": "Premium-Erlebnis",
@@ -68,6 +99,201 @@
     "suvDesc": "Geräumig für Gruppen",
     "vanDesc": "Perfekt für große Gruppen",
     "luxuryDesc": "Premium-Erlebnis"
+  },
+  "services": {
+    "intro": "Eugenia Travel Consultancy Taxi ist die führende Taxi-Buchungswebsite, die Touristen und Einwohnern hilft, zuverlässige Flughafentransportdienste zu finden. Wir arbeiten seit vielen Jahren auf dem Markt und verstehen die Bedürfnisse und Anforderungen der Kunden sowie die Erwartungen der Taxifahrer.",
+    "privateTransfer": {
+      "title": "Spezialisten für Privattransfers",
+      "description": "Eugenia Travel Consultancy ist der Anbieter von Flughafentransferdiensten, der die hochinteraktive und einfach zu bedienende Taxi-Buchungswebsite verwaltet hat."
+    },
+    "simpleBooking": {
+      "title": "Einfaches Buchungssystem",
+      "description": "Die Buchungswebsite von Eugenia Travel Consultancy bietet die einfachsten Taxi-Buchungsdienste. Hier ist der 3-Schritte-Prozess, den Sie befolgen müssen, um Ihr nächstes Taxi zu buchen."
+    },
+    "customerSatisfaction": {
+      "title": "100% Kundenzufriedenheit",
+      "description": "Unser Kunde ist unser größtes Kapital. Wir werden sicherstellen, dass Sie mit den Diensten, die Sie erhalten, zufrieden sind."
+    },
+    "waitingTime": {
+      "title": "Wartezeit",
+      "description": "Unser Kunde ist unser größtes Kapital. Wir werden sicherstellen, dass Sie mit den Diensten, die Sie erhalten, zufrieden sind."
+    },
+    "meetGreet": {
+      "title": "Meet-and-Greet-Service",
+      "description": "Alle Abholungen vom Flughafen kommen mit Meet-and-Greet-Service, der es Ihnen ermöglicht, einfach vom Flughafen zu kommen und im Taxi zu sein."
+    },
+    "specialServices": {
+      "title": "Spezialdienste",
+      "description": "Alle unsere Dienste sind zu einem sehr erschwinglichen Preis verfügbar, um sicherzustellen, dass Sie sich keine Sorgen um Ihr Budget machen müssen."
+    }
+  },
+  "company": {
+    "title": "Unser Unternehmen",
+    "description": "Willkommen bei Eugenia's Travel Consultancy, Ihrer definitiven Lösung für zuverlässige, elegante und personalisierte Transfers. Mit Wurzeln in Sizilien, Italien, bringen wir warme sizilianische Gastfreundschaft und mediterranen Charme in jede Reise. Wir sind spezialisiert auf außergewöhnliche Transporte, die Komfort, Effizienz und Aufmerksamkeit für Details kombinieren.",
+    "punctuality": {
+      "title": "Pünktlichkeit",
+      "description": "Pünktlichkeit spiegelt Engagement und Effizienz wider und stellt sicher, dass die Dienste präzise zur festgelegten Zeit eingehalten werden."
+    },
+    "professionalDrivers": {
+      "title": "Professionelle Fahrer",
+      "description": "Unsere professionellen Fahrer zeichnen sich durch Erfahrung und Hingabe aus und bieten einen sicheren und hochwertigen Service."
+    },
+    "security": {
+      "title": "Sicherheit",
+      "description": "Sicherheit bei Reisen und integraler Logistik spiegelt unser Engagement für die Ruhe und das Wohlbefinden unserer Kunden wider."
+    },
+    "reliableCompany": {
+      "title": "Zuverlässiges Unternehmen",
+      "description": "Wir sind ein zuverlässiges Unternehmen, das Erfahrung und Professionalität vereint, um Qualitätsservice zu bieten und die Zufriedenheit unserer Kunden zu gewährleisten."
+    }
+  },
+  "about": {
+    "title": "Wir sind hier, um Ihre Reise einfach und aufregend zu gestalten",
+    "paragraph1": "Zuverlässige, exekutive und sichere Transportdienste sind heutzutage eine Seltenheit. Die gute Nachricht ist, dass Eugenia Travel Consultancy Taxi nur einen Anruf entfernt ist.",
+    "paragraph2": "Waren Sie schon einmal in einer Situation, in der Sie zu spät waren und im letzten Moment ein Flugzeug erreichen mussten? Nun, Eugenia Travel Consultancy ist für Sie verfügbar, mit einer zuverlässigen Taxiunternehmensnummer, die Sie anrufen können, um Ihre Bedürfnisse zu erfüllen. Bei uns sind Sie sicher, pünktlich anzukommen. Der Retter in letzter Minute!",
+    "features": {
+      "longExperience": "Langjährige Erfahrung",
+      "topDrivers": "Top-Fahrer",
+      "firstClassServices": "Erstklassige Dienstleistungen",
+      "alwaysOnTime": "Immer pünktlich",
+      "allAirportTransfers": "Alle Flughafentransfers"
+    }
+  },
+  "common": {
+    "profileComingSoon": "Mein Profil (in Kürze)",
+    "logoutError": "Fehler beim Abmelden",
+    "imageNotAvailable": "Bild nicht verfügbar",
+    "accept": "Akzeptieren",
+    "gettingLocation": "Standort wird abgerufen...",
+    "vehicle": "Fahrzeug:",
+    "journeyFare": "Fahrtpreis",
+    "priceMustBeGreaterThanZero": "Der Preis muss größer als null sein",
+    "invalidDateTimeFormat": "Ungültiges Datums- oder Zeitformat",
+    "addressNotFound": "Adresse konnte nicht gefunden werden",
+    "errorSearchingAddress": "Fehler bei der Adresssuche",
+    "understood": "Verstanden",
+    "user": "Benutzer",
+    "selectFromMap": "Von Karte auswählen",
+    "writeOrSelectAddress": "Schreiben oder wählen Sie eine Adresse",
+    "selectOption": "Wählen Sie eine Option",
+    "pleaseCompleteAllFields": "Bitte füllen Sie alle erforderlichen Felder aus",
+    "thisFieldIsRequired": "Dieses Feld ist erforderlich",
+    "enterValidEmail": "Geben Sie eine gültige E-Mail ein",
+    "verifiedDrivers": "Verifizierte Fahrer",
+    "weekDays": ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"],
+    "months": ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"]
+  },
+  "destinations": {
+    "subtitle": "Buchen Sie jetzt Ihr Taxi und reisen Sie bequem",
+    "bookButton": "Buchen",
+    "ranking": "Ranking",
+    "rome": {
+      "airport": "Flughafen Rom",
+      "center": "Rom Zentrum"
+    },
+    "milan": {
+      "airport": "Flughafen Mailand",
+      "center": "Mailand Zentrum"
+    },
+    "florence": {
+      "airport": "Flughafen Florenz",
+      "center": "Florenz Zentrum"
+    },
+    "bologna": {
+      "airport": "Flughafen Bologna",
+      "center": "Bologna Zentrum"
+    },
+    "pisa": {
+      "airport": "Flughafen Pisa",
+      "center": "Pisa Zentrum"
+    }
+  },
+  "timePicker": {
+    "selectTime": "Zeit auswählen",
+    "hour": "Stunde",
+    "minute": "Minute",
+    "editLabel": "{label} bearbeiten"
+  },
+  "contacts": {
+    "title": "Haben Sie Fragen?",
+    "subtitle": "Wir sind hier, um Ihnen zu helfen",
+    "phone": "Telefon",
+    "email": "E-Mail",
+    "website": "Website",
+    "location": "Standort"
+  },
+  "footer": {
+    "description1": "Ihre definitive Lösung für zuverlässige, elegante und personalisierte Transfers.",
+    "description2": "Verfügbar 24/7, um Sie dorthin zu bringen, wo Sie möchten.",
+    "copyright": "Copyright © {year} Alle Rechte vorbehalten | entwickelt von "
+  },
+  "requestRide": {
+    "requestNewRide": "Neue Fahrt anfordern",
+    "tripDate": "Fahrtdatum *",
+    "tripTime": "Fahrtzeit *",
+    "tripCost": "Fahrtkosten",
+    "requestRide": "Fahrt anfordern",
+    "selectDate": "Datum auswählen",
+    "selectTime": "Zeit auswählen",
+    "fullName": "Vollständiger Name",
+    "emailAddress": "E-Mail-Adresse",
+    "contactNumber": "Kontaktnummer",
+    "invalidFormat": "Ungültiges Format",
+    "invalidFormatWithExample": "Ungültiges Format. Verwenden Sie HH:mm (z.B: 08:30)",
+    "signOut": "Abmelden",
+    "unknownError": "Unbekannter Fehler"
+  },
+  "payment": {
+    "tripSummary": "Fahrtzusammenfassung",
+    "processingError": "Fehler bei der Zahlungsbearbeitung",
+    "unknownError": "Unbekannter Fehler",
+    "invalidDate": "Ungültiges Datum",
+    "payWithPayPal": "Mit PayPal bezahlen",
+    "enterCardData": "Geben Sie Ihre Kartendaten ein, um die Zahlung abzuschließen",
+    "card": "Karte",
+    "apple": "Apple",
+    "google": "Google",
+    "deposit": "Einzahlung",
+    "pay": "Bezahlen",
+    "beneficiary": "Begünstigter",
+    "bank": "Bank",
+    "address": "Adresse",
+    "cardNumberRequired": "Kartennummer ist erforderlich",
+    "invalidCardNumber": "Ungültige Kartennummer",
+    "onlyNumbersAllowed": "Nur Zahlen sind erlaubt",
+    "expiryDateRequired": "Ablaufdatum ist erforderlich",
+    "cvvRequired": "CVV ist erforderlich",
+    "cvvInvalid": "CVV muss 3 oder 4 Ziffern haben",
+    "expiryFormat": "Format: MM/JJ"
+  },
+  "summary": {
+    "origin": "Ursprung",
+    "destination": "Ziel",
+    "distance": "Entfernung",
+    "passengers": "Passagiere",
+    "childSeats": "Kindersitze",
+    "handLuggage": "Handgepäck",
+    "checkInLuggage": "Aufgegebenes Gepäck",
+    "passengerName": "Passagiername",
+    "contactNumber": "Kontaktnummer",
+    "dateTime": "Datum und Uhrzeit",
+    "paymentMethod": "Zahlungsmethode *"
+  },
+  "receipt": {
+    "receiptNumber": "Belegnummer",
+    "receiptDate": "Datum",
+    "receiptTripDetails": "FAHRTDETAILS",
+    "receiptClientInfo": "KUNDENINFORMATIONEN",
+    "receiptPaymentSummary": "ZAHLUNGSZUSAMMENFASSUNG",
+    "receiptName": "Name",
+    "receiptEmail": "E-Mail",
+    "receiptPhone": "Telefon",
+    "receiptSubtotal": "Zwischensumme",
+    "receiptTotal": "Gesamt",
+    "receiptStatus": "Status",
+    "receiptPaid": "Bezahlt",
+    "receiptScheduledDateTime": "Geplantes Datum und Uhrzeit",
+    "receiptThankYou": "Vielen Dank für Ihren Einkauf!"
   }
 }
 

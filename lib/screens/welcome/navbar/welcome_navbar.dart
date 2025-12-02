@@ -22,6 +22,8 @@ class WelcomeNavbar extends StatelessWidget implements PreferredSizeWidget {
   final Future<void> Function() onHandleLogout;
   final VoidCallback onNavigateToWelcomePath;
   final VoidCallback? onNavigateToCompany;
+  final VoidCallback? onNavigateToServices;
+  final VoidCallback? onNavigateToAbout;
   final VoidCallback? onNavigateToDestination;
   final VoidCallback? onNavigateToContacts;
 
@@ -33,6 +35,8 @@ class WelcomeNavbar extends StatelessWidget implements PreferredSizeWidget {
     required this.onHandleLogout,
     required this.onNavigateToWelcomePath,
     this.onNavigateToCompany,
+    this.onNavigateToServices,
+    this.onNavigateToAbout,
     this.onNavigateToDestination,
     this.onNavigateToContacts,
   });
@@ -127,13 +131,13 @@ class WelcomeNavbar extends StatelessWidget implements PreferredSizeWidget {
               : 'Empresa';
           final navService = (l10n != null && !l10n.navService.startsWith('nav.'))
               ? l10n.navService
-              : 'Servicio';
+              : 'Servicios';
           final navRates = (l10n != null && !l10n.navRates.startsWith('nav.'))
               ? l10n.navRates
-              : 'Tarifas';
+              : 'Profesionalismo';
           final navDestination = (l10n != null && !l10n.navDestination.startsWith('nav.'))
               ? l10n.navDestination
-              : 'Destino';
+              : 'Destinos';
           final navContacts = (l10n != null && !l10n.navContacts.startsWith('nav.'))
               ? l10n.navContacts
               : 'Contactos';
@@ -141,11 +145,68 @@ class WelcomeNavbar extends StatelessWidget implements PreferredSizeWidget {
           return Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
+              // Inicio
               _buildNavItem(navHome, () {
                 // Navegar a /welcome siempre
                 onNavigateToWelcomePath();
               }),
               const SizedBox(width: 20),
+              // Destinos
+              _buildNavItem(navDestination, () {
+                if (kDebugMode) {
+                  debugPrint('[WelcomeNavbar] Botón Destinos presionado');
+                  debugPrint(
+                    '[WelcomeNavbar] onNavigateToDestination es null: ${onNavigateToDestination == null}',
+                  );
+                }
+                if (onNavigateToDestination != null) {
+                  onNavigateToDestination!();
+                } else {
+                  if (kDebugMode) {
+                    debugPrint(
+                      '[WelcomeNavbar] ⚠️ onNavigateToDestination es null, no se puede navegar',
+                    );
+                  }
+                }
+              }),
+              const SizedBox(width: 20),
+              // Servicios
+              _buildNavItem(navService, () {
+                if (kDebugMode) {
+                  debugPrint('[WelcomeNavbar] Botón Servicios presionado');
+                  debugPrint(
+                    '[WelcomeNavbar] onNavigateToServices es null: ${onNavigateToServices == null}',
+                  );
+                }
+                if (onNavigateToServices != null) {
+                  onNavigateToServices!();
+                } else {
+                  if (kDebugMode) {
+                    debugPrint(
+                      '[WelcomeNavbar] ⚠️ onNavigateToServices es null, no se puede navegar',
+                    );
+                  }
+                }
+              }),
+              const SizedBox(width: 20),
+              // Acerca de
+              _buildNavItem(navRates, () {
+                if (kDebugMode) {
+                  debugPrint('[WelcomeNavbar] Botón Acerca de presionado');
+                  debugPrint(
+                    '[WelcomeNavbar] onNavigateToAbout es null: ${onNavigateToAbout == null}',
+                  );
+                }
+                if (onNavigateToAbout != null) {
+                  onNavigateToAbout!();
+                } else {
+                  if (kDebugMode) {
+                    debugPrint('[WelcomeNavbar] ⚠️ onNavigateToAbout es null, no se puede navegar');
+                  }
+                }
+              }),
+              const SizedBox(width: 20),
+              // Empresa
               _buildNavItem(navCompany, () {
                 if (kDebugMode) {
                   debugPrint('[WelcomeNavbar] Botón Empresa presionado');
@@ -164,28 +225,7 @@ class WelcomeNavbar extends StatelessWidget implements PreferredSizeWidget {
                 }
               }),
               const SizedBox(width: 20),
-              _buildNavItem(navService, () {}),
-              const SizedBox(width: 20),
-              _buildNavItem(navRates, () {}),
-              const SizedBox(width: 20),
-              _buildNavItem(navDestination, () {
-                if (kDebugMode) {
-                  debugPrint('[WelcomeNavbar] Botón Destino presionado');
-                  debugPrint(
-                    '[WelcomeNavbar] onNavigateToDestination es null: ${onNavigateToDestination == null}',
-                  );
-                }
-                if (onNavigateToDestination != null) {
-                  onNavigateToDestination!();
-                } else {
-                  if (kDebugMode) {
-                    debugPrint(
-                      '[WelcomeNavbar] ⚠️ onNavigateToDestination es null, no se puede navegar',
-                    );
-                  }
-                }
-              }),
-              const SizedBox(width: 20),
+              // Contactos
               _buildNavItem(navContacts, () {
                 if (kDebugMode) {
                   debugPrint('[WelcomeNavbar] Botón Contactos presionado');

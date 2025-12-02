@@ -9,51 +9,102 @@ import 'widgets/welcome_footer.dart';
 import 'welcome_screen.dart';
 import 'company_screen.dart';
 import 'contacts_screen.dart';
+import 'servicios_screen.dart';
+import 'acerca_de_screen.dart';
 import '../../../auth/login_screen.dart';
 import '../../../widgets/app_logo_header.dart';
+import '../../../l10n/app_localizations.dart';
 
 // Constants
 const _kSpacing = 16.0;
 const _kBorderRadius = 16.0;
 
-// Datos de destinos
-final List<Map<String, dynamic>> _destinations = [
+// Datos de destinos (sin localización - se obtiene dinámicamente)
+final List<Map<String, dynamic>> _destinationsData = [
   {
     'name': 'Roma',
-    'airport': 'Aeroporto di Roma',
-    'center': 'Roma Centro',
+    'key': 'rome',
     'image': 'assets/images/destinos/destination_1.jpg',
     'rating': 4,
   },
   {
     'name': 'Milano',
-    'airport': 'Aeroporto di Milano',
-    'center': 'Milano Centro',
+    'key': 'milan',
     'image': 'assets/images/destinos/destination_2.jpg',
     'rating': 4,
   },
   {
     'name': 'Firenze',
-    'airport': 'Aeroporto di Firenze',
-    'center': 'Firenze Centro',
+    'key': 'florence',
     'image': 'assets/images/destinos/destination_3.jpg',
     'rating': 4,
   },
   {
     'name': 'Bologna',
-    'airport': 'Aeroporto di Bologna',
-    'center': 'Bologna Centro',
+    'key': 'bologna',
     'image': 'assets/images/destinos/destination_4.jpg',
     'rating': 4,
   },
   {
     'name': 'Pisa',
-    'airport': 'Aeroporto di Pisa',
-    'center': 'Pisa Centro',
+    'key': 'pisa',
     'image': 'assets/images/destinos/destination_5.jpg',
     'rating': 4,
   },
 ];
+
+List<Map<String, dynamic>> _getDestinations(AppLocalizations? l10n) {
+  if (l10n == null) {
+    // Fallback a italiano si no hay localización
+    return _destinationsData.map((dest) => {
+      'name': dest['name'],
+      'airport': 'Aeroporto di ${dest['name']}',
+      'center': '${dest['name']} Centro',
+      'image': dest['image'],
+      'rating': dest['rating'],
+    }).toList();
+  }
+
+  return _destinationsData.map((dest) {
+    final key = dest['key'] as String;
+    String airport;
+    String center;
+
+    switch (key) {
+      case 'rome':
+        airport = l10n.destinationsRomeAirport;
+        center = l10n.destinationsRomeCenter;
+        break;
+      case 'milan':
+        airport = l10n.destinationsMilanAirport;
+        center = l10n.destinationsMilanCenter;
+        break;
+      case 'florence':
+        airport = l10n.destinationsFlorenceAirport;
+        center = l10n.destinationsFlorenceCenter;
+        break;
+      case 'bologna':
+        airport = l10n.destinationsBolognaAirport;
+        center = l10n.destinationsBolognaCenter;
+        break;
+      case 'pisa':
+        airport = l10n.destinationsPisaAirport;
+        center = l10n.destinationsPisaCenter;
+        break;
+      default:
+        airport = 'Aeroporto di ${dest['name']}';
+        center = '${dest['name']} Centro';
+    }
+
+    return {
+      'name': dest['name'],
+      'airport': airport,
+      'center': center,
+      'image': dest['image'],
+      'rating': dest['rating'],
+    };
+  }).toList();
+}
 
 /// Pantalla de destinos disponibles
 class DestinationsScreen extends StatefulWidget {
@@ -118,9 +169,10 @@ class _DestinationsScreenState extends State<DestinationsScreen> {
   }
 
   void _navigateToProfile() {
+    final l10n = AppLocalizations.of(context);
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Mi perfil (próximamente)')));
+    ).showSnackBar(SnackBar(content: Text(l10n?.profileComingSoon ?? 'Mi perfil (próximamente)')));
   }
 
   Future<void> _handleLogout() async {
@@ -137,9 +189,10 @@ class _DestinationsScreenState extends State<DestinationsScreen> {
       }
     } catch (e) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al cerrar sesión: ${e.toString()}'),
+            content: Text('${l10n?.logoutError ?? 'Error al cerrar sesión'}: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -221,6 +274,38 @@ class _DestinationsScreenState extends State<DestinationsScreen> {
     }
   }
 
+  void _navigateToServices() {
+    if (kDebugMode) {
+      debugPrint('[DestinationsScreen] _navigateToServices llamado');
+    }
+    if (!mounted) return;
+    try {
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (context) => const ServiciosScreen()));
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[DestinationsScreen] ❌ Error navegando a ServiciosScreen: $e');
+      }
+    }
+  }
+
+  void _navigateToAbout() {
+    if (kDebugMode) {
+      debugPrint('[DestinationsScreen] _navigateToAbout llamado');
+    }
+    if (!mounted) return;
+    try {
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (context) => const AcercaDeScreen()));
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[DestinationsScreen] ❌ Error navegando a AcercaDeScreen: $e');
+      }
+    }
+  }
+
   void _onBookDestination(Map<String, dynamic> destination) {
     // Navegar a welcome screen para reservar
     _navigateToWelcomePath();
@@ -241,6 +326,8 @@ class _DestinationsScreenState extends State<DestinationsScreen> {
         onHandleLogout: _handleLogout,
         onNavigateToWelcomePath: _navigateToWelcomePath,
         onNavigateToCompany: _navigateToCompany,
+        onNavigateToServices: _navigateToServices,
+        onNavigateToAbout: _navigateToAbout,
         onNavigateToDestination: _navigateToDestination,
         onNavigateToContacts: _navigateToContacts,
       ),
@@ -275,13 +362,19 @@ class _DestinationsScreenState extends State<DestinationsScreen> {
                     children: [
                       const SizedBox(height: 60), // Espacio para el navbar
                       const SizedBox(height: _kSpacing * 1),
-                      Text(
-                        'Prenota subito il tuo taxi e viaggia comodamente!',
-                        style: GoogleFonts.exo(
-                          fontSize: isTablet ? 18 : 16,
-                          color: Colors.white.withValues(alpha: 0.9),
-                          height: 1.6,
-                        ),
+                      Builder(
+                        builder: (context) {
+                          final l10n = AppLocalizations.of(context);
+                          return Text(
+                            l10n?.destinationsSubtitle ??
+                                'Reserva ahora tu taxi y viaja cómodamente',
+                            style: GoogleFonts.exo(
+                              fontSize: isTablet ? 18 : 16,
+                              color: Colors.white.withValues(alpha: 0.9),
+                              height: 1.6,
+                            ),
+                          );
+                        },
                       ),
                       const SizedBox(height: _kSpacing * 1.5),
                       // Grid de destinos
@@ -293,6 +386,8 @@ class _DestinationsScreenState extends State<DestinationsScreen> {
                         onNavigateToDestination: _navigateToDestination,
                         onNavigateToCompany: _navigateToCompany,
                         onNavigateToContacts: _navigateToContacts,
+                        onNavigateToServices: _navigateToServices,
+                        onNavigateToAbout: _navigateToAbout,
                       ),
                     ],
                   ),
@@ -308,38 +403,45 @@ class _DestinationsScreenState extends State<DestinationsScreen> {
   }
 
   Widget _buildDestinationsGrid(bool isTablet) {
-    if (!isTablet) {
-      // En móvil, mostrar en columna simple
-      return Column(
-        children: _destinations
-            .map(
-              (dest) => Padding(
-                padding: const EdgeInsets.only(bottom: _kSpacing * 2),
-                child: _buildDestinationCard(dest),
-              ),
-            )
-            .toList(),
-      );
-    }
+    return Builder(
+      builder: (context) {
+        final l10n = AppLocalizations.of(context);
+        final destinations = _getDestinations(l10n);
 
-    // En tablet: layout de 5 columnas, una por destino
-    // Columnas 2 y 4 (índices 1 y 3) tienen info arriba, imagen abajo
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (int i = 0; i < _destinations.length; i++) ...[
-            if (i > 0) const SizedBox(width: _kSpacing * 1.5),
-            Expanded(
-              flex: 1,
-              child: _buildDestinationCard(
-                _destinations[i],
-                reverseOrder: i == 1 || i == 3, // Milano (1) y Bologna (3)
-              ),
-            ),
-          ],
-        ],
-      ),
+        if (!isTablet) {
+          // En móvil, mostrar en columna simple
+          return Column(
+            children: destinations
+                .map(
+                  (dest) => Padding(
+                    padding: const EdgeInsets.only(bottom: _kSpacing * 2),
+                    child: _buildDestinationCard(dest),
+                  ),
+                )
+                .toList(),
+          );
+        }
+
+        // En tablet: layout de 5 columnas, una por destino
+        // Columnas 2 y 4 (índices 1 y 3) tienen info arriba, imagen abajo
+        return IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (int i = 0; i < destinations.length; i++) ...[
+                if (i > 0) const SizedBox(width: _kSpacing * 1.5),
+                Expanded(
+                  flex: 1,
+                  child: _buildDestinationCard(
+                    destinations[i],
+                    reverseOrder: i == 1 || i == 3, // Milano (1) y Bologna (3)
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -408,16 +510,29 @@ class _DestinationsScreenState extends State<DestinationsScreen> {
                   ),
                 ),
                 const SizedBox(width: 6),
-                Text('Ranking', style: GoogleFonts.exo(fontSize: 12, color: Colors.grey.shade600)),
+                Builder(
+                  builder: (context) {
+                    final l10n = AppLocalizations.of(context);
+                    return Text(
+                      l10n?.destinationsRanking ?? 'Ranking',
+                      style: GoogleFonts.exo(fontSize: 12, color: Colors.grey.shade600),
+                    );
+                  },
+                ),
               ],
             ),
             const SizedBox(height: _kSpacing * 0.75),
             // Descripción
-            Text(
-              'Prenota subito il tuo taxi e viaggia comodamente!',
-              style: GoogleFonts.exo(fontSize: 12, color: Colors.grey.shade700, height: 1.4),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+            Builder(
+              builder: (context) {
+                final l10n = AppLocalizations.of(context);
+                return Text(
+                  l10n?.destinationsSubtitle ?? 'Reserva ahora tu taxi y viaja cómodamente',
+                  style: GoogleFonts.exo(fontSize: 12, color: Colors.grey.shade700, height: 1.4),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                );
+              },
             ),
             const SizedBox(height: _kSpacing),
             // Botón
@@ -432,9 +547,14 @@ class _DestinationsScreenState extends State<DestinationsScreen> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   elevation: 2,
                 ),
-                child: Text(
-                  'Prenotare',
-                  style: GoogleFonts.exo(fontSize: 14, fontWeight: FontWeight.w600),
+                child: Builder(
+                  builder: (context) {
+                    final l10n = AppLocalizations.of(context);
+                    return Text(
+                      l10n?.destinationsBookButton ?? 'Reservar',
+                      style: GoogleFonts.exo(fontSize: 14, fontWeight: FontWeight.w600),
+                    );
+                  },
                 ),
               ),
             ),
