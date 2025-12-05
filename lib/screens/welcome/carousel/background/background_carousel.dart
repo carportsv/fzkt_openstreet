@@ -67,6 +67,9 @@ class _BackgroundCarouselState extends State<BackgroundCarousel> {
           fit: BoxFit.cover,
           width: double.infinity,
           height: double.infinity,
+          cacheWidth: 1920, // Limitar ancho para evitar distorsión
+          cacheHeight: 1080, // Limitar alto para evitar distorsión
+          filterQuality: FilterQuality.medium, // Balance entre calidad y rendimiento
           errorBuilder: (context, error, stackTrace) {
             if (kDebugMode) {
               debugPrint('[BackgroundCarousel] ❌ Error cargando imagen de fondo: $imagePath');

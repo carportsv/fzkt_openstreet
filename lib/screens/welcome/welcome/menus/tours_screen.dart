@@ -5,6 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/whatsapp_floating_button.dart';
+import '../../../../shared/widgets/welcome_footer.dart';
 import '../../navbar/welcome_navbar.dart';
 import '../../../../auth/login_screen.dart';
 import '../welcome_screen.dart';
@@ -15,6 +16,7 @@ import 'destinations_screen.dart';
 import 'contacts_screen.dart';
 import 'weddings_screen.dart';
 import 'terms_screen.dart';
+import 'privacy_policy_screen.dart';
 
 // Constants
 const _kPrimaryColor = Color(0xFF1D4ED8);
@@ -114,6 +116,7 @@ class _ToursScreenState extends State<ToursScreen> {
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       appBar: WelcomeNavbar(
+        isDarkBackground: false, // Texto negro para fondo claro
         currentUser: _currentUser,
         onNavigateToLogin: _navigateToLogin,
         onNavigateToProfile: _navigateToProfile,
@@ -165,6 +168,45 @@ class _ToursScreenState extends State<ToursScreen> {
             const SizedBox(height: _kSpacing * 4),
             _buildWhyChooseUs(context),
             const SizedBox(height: _kSpacing * 4),
+            // Footer
+            WelcomeFooter(
+              onNavigateToWelcome: _navigateToWelcomePath,
+              onNavigateToDestination: () {
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (context) => const DestinationsScreen()),
+                );
+              },
+              onNavigateToCompany: () {
+                Navigator.of(
+                  context,
+                ).pushReplacement(MaterialPageRoute(builder: (context) => const CompanyScreen()));
+              },
+              onNavigateToContacts: () {
+                Navigator.of(
+                  context,
+                ).pushReplacement(MaterialPageRoute(builder: (context) => const ContactsScreen()));
+              },
+              onNavigateToServices: () {
+                Navigator.of(
+                  context,
+                ).pushReplacement(MaterialPageRoute(builder: (context) => const ServiciosScreen()));
+              },
+              onNavigateToAbout: () {
+                Navigator.of(
+                  context,
+                ).pushReplacement(MaterialPageRoute(builder: (context) => const AcercaDeScreen()));
+              },
+              onNavigateToTerms: () {
+                Navigator.of(
+                  context,
+                ).pushReplacement(MaterialPageRoute(builder: (context) => const TermsScreen()));
+              },
+              onNavigateToPrivacy: () {
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (context) => const PrivacyPolicyScreen()),
+                );
+              },
+            ),
           ],
         ),
       ),

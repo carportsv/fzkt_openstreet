@@ -407,24 +407,123 @@ class AppLocalizations {
   // Terms
   String get termsTitle => translate('terms.title');
   String get termsLastUpdate => translate('terms.lastUpdate');
+  String get termsIntro => translate('terms.intro');
+  
+  // Sección 1: PREMESAS
   String get termsSection1Title => translate('terms.section1Title');
-  String get termsSection1Content => translate('terms.section1Content');
+  String get termsSection1_1 => translate('terms.section1_1');
+  String get termsSection1_2 => translate('terms.section1_2');
+  String get termsSection1_3 => translate('terms.section1_3');
+  String get termsSection1_3a => translate('terms.section1_3a');
+  String get termsSection1_3b => translate('terms.section1_3b');
+  
+  // Sección 2: RESERVAS
   String get termsSection2Title => translate('terms.section2Title');
-  String get termsSection2Content => translate('terms.section2Content');
+  String get termsSection2_1 => translate('terms.section2_1');
+  String get termsSection2_2 => translate('terms.section2_2');
+  String get termsSection2_2b => translate('terms.section2_2b');
+  String get termsSection2_2c => translate('terms.section2_2c');
+  String get termsSection2_2d => translate('terms.section2_2d');
+  String get termsSection2_3 => translate('terms.section2_3');
+  String get termsSection2_3b => translate('terms.section2_3b');
+  String get termsSection2_4 => translate('terms.section2_4');
+  String get termsSection2_5 => translate('terms.section2_5');
+  String get termsSection2_6 => translate('terms.section2_6');
+  
+  // Sección 3: RECESO Y PENALIDADES
   String get termsSection3Title => translate('terms.section3Title');
-  String get termsSection3Content => translate('terms.section3Content');
+  String get termsSection3_1 => translate('terms.section3_1');
+  
+  // Sección 4: LEY APLICABLE
   String get termsSection4Title => translate('terms.section4Title');
-  String get termsSection4Content => translate('terms.section4Content');
+  String get termsSection4_1 => translate('terms.section4_1');
+  
+  // Sección 5: EQUIPAJE
   String get termsSection5Title => translate('terms.section5Title');
-  String get termsSection5Content => translate('terms.section5Content');
+  String get termsSection5_1 => translate('terms.section5_1');
+  String get termsSection5_1b => translate('terms.section5_1b');
+  String get termsSection5_2 => translate('terms.section5_2');
+  
+  // Sección 6: RETRASOS
   String get termsSection6Title => translate('terms.section6Title');
-  String get termsSection6Content => translate('terms.section6Content');
+  String get termsSection6_1 => translate('terms.section6_1');
+  String get termsSection6_2 => translate('terms.section6_2');
+  String get termsSection6_2b => translate('terms.section6_2b');
+  String get termsSection6_3 => translate('terms.section6_3');
+  String get termsSection6_3b => translate('terms.section6_3b');
+  
+  // Sección 7: MODALIDADES DEL TRANSPORTE
   String get termsSection7Title => translate('terms.section7Title');
-  String get termsSection7Content => translate('terms.section7Content');
+  String get termsSection7_1 => translate('terms.section7_1');
+  String get termsSection7_2 => translate('terms.section7_2');
+  String get termsSection7_3 => translate('terms.section7_3');
+  String get termsSection7_4 => translate('terms.section7_4');
+  String get termsSection7_5 => translate('terms.section7_5');
+  
+  // Sección 8: CANCELACIONES
   String get termsSection8Title => translate('terms.section8Title');
-  String get termsSection8Content => translate('terms.section8Content');
+  String get termsSection8_1 => translate('terms.section8_1');
+  String get termsSection8_1b => translate('terms.section8_1b');
+  String get termsSection8_1c => translate('terms.section8_1c');
+  String get termsSection8_2 => translate('terms.section8_2');
+  String get termsSection8_3 => translate('terms.section8_3');
+  
+  // Sección 9: IDIOMA
+  String get termsSection9Title => translate('terms.section9Title');
+  String get termsSection9_1 => translate('terms.section9_1');
+  
+  // Sección 10: PRIVACIDAD
+  String get termsSection10Title => translate('terms.section10Title');
+  String get termsSection10_1 => translate('terms.section10_1');
+  String get termsSection10_2 => translate('terms.section10_2');
+  String get termsSection10_3 => translate('terms.section10_3');
+  
+  // Aprobación específica de cláusulas
+  String get termsSpecificApprovalTitle => translate('terms.specificApprovalTitle');
+  String get termsSpecificApproval => translate('terms.specificApproval');
+  String get termsClause1 => translate('terms.clause1');
+  String get termsClause2 => translate('terms.clause2');
+  String get termsClause3 => translate('terms.clause3');
+  String get termsClause4 => translate('terms.clause4');
+  String get termsClause5 => translate('terms.clause5');
+  String get termsClause6 => translate('terms.clause6');
+  String get termsClause7 => translate('terms.clause7');
+  String get termsContactEmail => translate('terms.contactEmail');
+  
   String get termsQuestions => translate('terms.questions');
   String get termsContactUs => translate('terms.contactUs');
+
+  // Privacy Policy
+  String get privacyTitle => translate('privacy.title');
+  String get privacyLastUpdate => translate('privacy.lastUpdate');
+  String get privacyPolicyTitle => translate('privacy.policyTitle');
+  String get privacyIntro => translate('privacy.intro');
+  String get privacyDefinitionsTitle => translate('privacy.definitionsTitle');
+  String get privacyDefWe => translate('privacy.defWe');
+  String get privacyDefYou => translate('privacy.defYou');
+  String get privacyDefGDPR => translate('privacy.defGDPR');
+  String get privacyDefPECR => translate('privacy.defPECR');
+  String get privacyDefCookies => translate('privacy.defCookies');
+  String get privacyGDPRTitle => translate('privacy.gdprTitle');
+  String get privacyGDPRContent => translate('privacy.gdprContent');
+  String get privacyRightsTitle => translate('privacy.rightsTitle');
+  String get privacyRightsIntro => translate('privacy.rightsIntro');
+  String get privacyRight1 => translate('privacy.right1');
+  String get privacyRight2 => translate('privacy.right2');
+  String get privacyRight3 => translate('privacy.right3');
+  String get privacyRight4 => translate('privacy.right4');
+  String get privacyRight5 => translate('privacy.right5');
+  String get privacyRight6 => translate('privacy.right6');
+  String get privacyRight7 => translate('privacy.right7');
+  String get privacyRight8 => translate('privacy.right8');
+  String get privacyCookiesTitle => translate('privacy.cookiesTitle');
+  String get privacyCookiesContent => translate('privacy.cookiesContent');
+  String get privacySecurityTitle => translate('privacy.securityTitle');
+  String get privacySecurityContent => translate('privacy.securityContent');
+  String get privacyEmailTitle => translate('privacy.emailTitle');
+  String get privacyEmailContent => translate('privacy.emailContent');
+  String get privacyQuestions => translate('privacy.questions');
+  String get privacyContactUs => translate('privacy.contactUs');
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

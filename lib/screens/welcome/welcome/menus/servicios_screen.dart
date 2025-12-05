@@ -11,6 +11,10 @@ import 'destinations_screen.dart';
 import 'company_screen.dart';
 import 'contacts_screen.dart';
 import 'acerca_de_screen.dart';
+import 'tours_screen.dart';
+import 'weddings_screen.dart';
+import 'terms_screen.dart';
+import 'privacy_policy_screen.dart';
 import '../../../../auth/login_screen.dart';
 import '../../../../shared/widgets/app_logo_header.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -224,6 +228,58 @@ class _ServiciosScreenState extends State<ServiciosScreen> {
     }
   }
 
+  void _navigateToTours() {
+    if (!mounted) return;
+    try {
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (context) => const ToursScreen()));
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[ServiciosScreen] ❌ Error navegando a ToursScreen: $e');
+      }
+    }
+  }
+
+  void _navigateToWeddings() {
+    if (!mounted) return;
+    try {
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (context) => const WeddingsScreen()));
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[ServiciosScreen] ❌ Error navegando a WeddingsScreen: $e');
+      }
+    }
+  }
+
+  void _navigateToTerms() {
+    if (!mounted) return;
+    try {
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (context) => const TermsScreen()));
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[ServiciosScreen] ❌ Error navegando a TermsScreen: $e');
+      }
+    }
+  }
+
+  void _navigateToPrivacy() {
+    if (!mounted) return;
+    try {
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (context) => const PrivacyPolicyScreen()));
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[ServiciosScreen] ❌ Error navegando a PrivacyPolicyScreen: $e');
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -252,10 +308,13 @@ class _ServiciosScreenState extends State<ServiciosScreen> {
             onHandleLogout: _handleLogout,
             onNavigateToWelcomePath: _navigateToWelcomePath,
             onNavigateToCompany: _navigateToCompany,
-            onNavigateToServices: _navigateToServices,
+            onNavigateToServices: null, // Ya estamos aquí
             onNavigateToAbout: _navigateToAbout,
             onNavigateToDestination: _navigateToDestination,
             onNavigateToContacts: _navigateToContacts,
+            onNavigateToTours: _navigateToTours,
+            onNavigateToWeddings: _navigateToWeddings,
+            onNavigateToTerms: _navigateToTerms,
           ),
         ),
       ),
@@ -295,6 +354,8 @@ class _ServiciosScreenState extends State<ServiciosScreen> {
                                 onNavigateToContacts: _navigateToContacts,
                                 onNavigateToServices: _navigateToServices,
                                 onNavigateToAbout: _navigateToAbout,
+                                onNavigateToTerms: _navigateToTerms,
+                                onNavigateToPrivacy: _navigateToPrivacy,
                               ),
                             ],
                           ),

@@ -27,6 +27,7 @@ import 'menus/acerca_de_screen.dart';
 import 'menus/tours_screen.dart';
 import 'menus/weddings_screen.dart';
 import 'menus/terms_screen.dart';
+import 'menus/privacy_policy_screen.dart';
 import '../../../shared/widgets/whatsapp_floating_button.dart';
 
 // Constants
@@ -815,6 +816,19 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     }
   }
 
+  void _navigateToPrivacy() {
+    if (!mounted) return;
+    try {
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (context) => const PrivacyPolicyScreen()));
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[WelcomeScreen] ❌ Error navegando a PrivacyPolicyScreen: $e');
+      }
+    }
+  }
+
   /// Navega a servicios
   void _navigateToServices() {
     if (kDebugMode) {
@@ -941,7 +955,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       right: _kSpacing * 2,
                     ),
                     child: Center(
-                    child: SizedBox(height: 425, child: VehicleCarousel(vehicles: _vehicles)),
+                      child: SizedBox(height: 425, child: VehicleCarousel(vehicles: _vehicles)),
                     ),
                   ),
                 ),
@@ -959,6 +973,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               onNavigateToContacts: _navigateToContacts,
               onNavigateToServices: _navigateToServices,
               onNavigateToAbout: _navigateToAbout,
+              onNavigateToTerms: _navigateToTerms,
+              onNavigateToPrivacy: _navigateToPrivacy,
             ),
           ],
         ),
@@ -1052,7 +1068,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         ),
         const SizedBox(height: _kSpacing * 2),
 
-        // Features - en fila horizontal
+        // Features - en fila horizontal (solo 3 iconos)
         Builder(
           builder: (context) {
             final l10n = AppLocalizations.of(context);
@@ -1119,6 +1135,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               onNavigateToContacts: _navigateToContacts,
               onNavigateToServices: _navigateToServices,
               onNavigateToAbout: _navigateToAbout,
+              onNavigateToTerms: _navigateToTerms,
+              onNavigateToPrivacy: _navigateToPrivacy,
             ),
           ],
         ),
@@ -1450,16 +1468,16 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             builder: (context) {
               final l10n = AppLocalizations.of(context);
               return Center(
-            child: Text(
+                child: Text(
                   l10n?.featuresSubtitle ?? 'Descubre por qué somos tu mejor opción para viajar',
-              style: GoogleFonts.exo(
-                fontSize: isTablet ? 13 : 12,
-                color: Colors.black87,
-                height: 1.5,
-                fontWeight: FontWeight.w400,
-              ),
-              textAlign: TextAlign.center,
-            ),
+                  style: GoogleFonts.exo(
+                    fontSize: isTablet ? 13 : 12,
+                    color: Colors.black87,
+                    height: 1.5,
+                    fontWeight: FontWeight.w400,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
               );
             },
           ),
@@ -1475,9 +1493,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     return Builder(
       builder: (context) {
         final l10n = AppLocalizations.of(context);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             Expanded(
               child: _buildFeatureCard(
                 1,
@@ -1486,7 +1504,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 isTablet,
               ),
             ),
-        SizedBox(width: _kSpacing * 3),
+            SizedBox(width: _kSpacing * 3),
             Expanded(
               child: _buildFeatureCard(
                 2,
@@ -1495,7 +1513,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 isTablet,
               ),
             ),
-        SizedBox(width: _kSpacing * 3),
+            SizedBox(width: _kSpacing * 3),
             Expanded(
               child: _buildFeatureCard(
                 3,
@@ -1504,7 +1522,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 isTablet,
               ),
             ),
-      ],
+          ],
         );
       },
     );
@@ -1517,29 +1535,29 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     return Builder(
       builder: (context) {
         final l10n = AppLocalizations.of(context);
-    return Column(
-      children: [
+        return Column(
+          children: [
             _buildFeatureCard(
               1,
               l10n?.featuresFeature1Title ?? 'Viaje',
               l10n?.featuresFeature1Description ?? _getFeature1Text(),
               isTablet,
             ),
-        SizedBox(height: _kSpacing * 2.5),
+            SizedBox(height: _kSpacing * 2.5),
             _buildFeatureCard(
               2,
               l10n?.featuresFeature2Title ?? 'Experiencia',
               l10n?.featuresFeature2Description ?? _getFeature2Text(),
               isTablet,
             ),
-        SizedBox(height: _kSpacing * 2.5),
+            SizedBox(height: _kSpacing * 2.5),
             _buildFeatureCard(
               3,
               l10n?.featuresFeature3Title ?? 'Relax',
               l10n?.featuresFeature3Description ?? _getFeature3Text(),
               isTablet,
             ),
-      ],
+          ],
         );
       },
     );
@@ -2015,11 +2033,11 @@ class _CustomTimePickerDialogState extends State<_CustomTimePickerDialog> {
                   final l10n = AppLocalizations.of(context);
                   return Text(
                     l10n != null ? l10n.timePickerEditLabel(label) : 'Editar $label',
-                style: GoogleFonts.exo(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: _kTextColor,
-                ),
+                    style: GoogleFonts.exo(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: _kTextColor,
+                    ),
                   );
                 },
               ),
@@ -2085,7 +2103,7 @@ class _CustomTimePickerDialogState extends State<_CustomTimePickerDialog> {
                           final l10n = AppLocalizations.of(context);
                           return Text(
                             l10n?.accept ?? 'Aceptar',
-                        style: GoogleFonts.exo(fontSize: 16, fontWeight: FontWeight.bold),
+                            style: GoogleFonts.exo(fontSize: 16, fontWeight: FontWeight.bold),
                           );
                         },
                       ),
@@ -2151,10 +2169,10 @@ class _CustomTimePickerDialogState extends State<_CustomTimePickerDialog> {
                   builder: (context) {
                     final l10n = AppLocalizations.of(context);
                     return _buildNumberPicker(
-                  value: _selectedHour,
-                  min: 1,
-                  max: 12,
-                  onChanged: _updateHour,
+                      value: _selectedHour,
+                      min: 1,
+                      max: 12,
+                      onChanged: _updateHour,
                       label: l10n?.timePickerHour ?? 'Hora',
                     );
                   },
@@ -2177,11 +2195,11 @@ class _CustomTimePickerDialogState extends State<_CustomTimePickerDialog> {
                   builder: (context) {
                     final l10n = AppLocalizations.of(context);
                     return _buildNumberPicker(
-                  value: _selectedMinute,
-                  min: 0,
-                  max: 59,
-                  step: 1,
-                  onChanged: _updateMinute,
+                      value: _selectedMinute,
+                      min: 0,
+                      max: 59,
+                      step: 1,
+                      onChanged: _updateMinute,
                       label: l10n?.timePickerMinute ?? 'Minuto',
                     );
                   },

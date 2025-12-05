@@ -14,12 +14,26 @@ class WhatsAppFloatingButton extends StatelessWidget {
   /// Abre WhatsApp con el número configurado en env
   Future<void> _openWhatsApp(BuildContext context) async {
     try {
+      // Verificar si dotenv está cargado
+      if (dotenv.env.isEmpty) {
+        if (context.mounted) {
+          _showError(
+            context,
+            'Variables de entorno no cargadas. Asegúrate de tener el archivo "env" en la raíz del proyecto.',
+          );
+        }
+        return;
+      }
+
       // Obtener el número de WhatsApp desde variables de entorno
       final whatsappNumber = dotenv.env['WHATSAPP_NUMBER'] ?? '';
 
       if (whatsappNumber.isEmpty) {
         if (context.mounted) {
-          _showError(context, 'Número de WhatsApp no configurado');
+          _showError(
+            context,
+            'Número de WhatsApp no configurado en el archivo "env". Por favor, configura WHATSAPP_NUMBER.',
+          );
         }
         return;
       }

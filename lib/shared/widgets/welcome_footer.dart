@@ -17,6 +17,8 @@ class WelcomeFooter extends StatelessWidget {
   final VoidCallback? onNavigateToContacts;
   final VoidCallback? onNavigateToServices;
   final VoidCallback? onNavigateToAbout;
+  final VoidCallback? onNavigateToTerms;
+  final VoidCallback? onNavigateToPrivacy;
 
   const WelcomeFooter({
     super.key,
@@ -26,6 +28,8 @@ class WelcomeFooter extends StatelessWidget {
     this.onNavigateToContacts,
     this.onNavigateToServices,
     this.onNavigateToAbout,
+    this.onNavigateToTerms,
+    this.onNavigateToPrivacy,
   });
 
   @override
@@ -101,13 +105,14 @@ class WelcomeFooter extends StatelessWidget {
                 children: [_buildSocialMedia(context)],
               ),
             ),
-            // Columna 3: Descripción en 2 filas - 40%
+            // Columna 3: Descripción en 2 filas + Términos debajo - 40%
             SizedBox(
               width: totalWidth * 0.40,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  // Fila 1: Primera descripción
                   Builder(
                     builder: (context) {
                       final l10n = AppLocalizations.of(context);
@@ -124,6 +129,7 @@ class WelcomeFooter extends StatelessWidget {
                     },
                   ),
                   const SizedBox(height: _kSpacing * 0.5),
+                  // Fila 2: Segunda descripción
                   Builder(
                     builder: (context) {
                       final l10n = AppLocalizations.of(context);
@@ -138,6 +144,90 @@ class WelcomeFooter extends StatelessWidget {
                         ),
                       );
                     },
+                  ),
+                  const SizedBox(height: _kSpacing * 1.5),
+                  // Fila 3: Iconos de Términos y Privacy Policy (lado a lado)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Términos y Condiciones
+                      if (onNavigateToTerms != null)
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: onNavigateToTerms,
+                            borderRadius: BorderRadius.circular(8),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.description_outlined,
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Builder(
+                                    builder: (context) {
+                                      final l10n = AppLocalizations.of(context);
+                                      return Text(
+                                        l10n?.termsTitle ?? 'Términos',
+                                        style: GoogleFonts.exo(
+                                          fontSize: 13,
+                                          color: Colors.white.withValues(alpha: 0.9),
+                                          fontWeight: FontWeight.w500,
+                                          decoration: TextDecoration.underline,
+                                          decorationColor: Colors.white.withValues(alpha: 0.7),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      const SizedBox(width: 20),
+                      // Privacy Policy (NUEVO)
+                      if (onNavigateToPrivacy != null)
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: onNavigateToPrivacy,
+                            borderRadius: BorderRadius.circular(8),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.privacy_tip_outlined,
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Builder(
+                                    builder: (context) {
+                                      final l10n = AppLocalizations.of(context);
+                                      return Text(
+                                        l10n?.privacyTitle ?? 'Privacy',
+                                        style: GoogleFonts.exo(
+                                          fontSize: 13,
+                                          color: Colors.white.withValues(alpha: 0.9),
+                                          fontWeight: FontWeight.w500,
+                                          decoration: TextDecoration.underline,
+                                          decorationColor: Colors.white.withValues(alpha: 0.7),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ],
               ),
@@ -208,6 +298,10 @@ class WelcomeFooter extends StatelessWidget {
       runSpacing: _kSpacing * 3,
       alignment: WrapAlignment.start,
       children: [
+        _buildSocialButton(
+          icon: FontAwesomeIcons.facebook,
+          onTap: () => _launchUrl('https://www.facebook.com/mytransfertrip'),
+        ),
         _buildSocialButton(
           icon: FontAwesomeIcons.instagram,
           onTap: () => _launchUrl('https://www.instagram.com/eugeniastravel_'),

@@ -29,6 +29,7 @@ class WelcomeNavbar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onNavigateToTours;
   final VoidCallback? onNavigateToWeddings;
   final VoidCallback? onNavigateToTerms;
+  final bool isDarkBackground; // Si es true, usa texto blanco; si es false, usa texto negro
 
   const WelcomeNavbar({
     super.key,
@@ -45,13 +46,18 @@ class WelcomeNavbar extends StatelessWidget implements PreferredSizeWidget {
     this.onNavigateToTours,
     this.onNavigateToWeddings,
     this.onNavigateToTerms,
+    this.isDarkBackground = true, // Por defecto texto blanco
   });
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 
   Widget _buildNavItem(String text, VoidCallback onTap) {
-    return HoverableNavItem(text: text, onTap: onTap);
+    return HoverableNavItem(
+      text: text,
+      onTap: onTap,
+      textColor: isDarkBackground ? Colors.white : Colors.black87,
+    );
   }
 
   @override
@@ -77,6 +83,7 @@ class WelcomeNavbar extends StatelessWidget implements PreferredSizeWidget {
     );
 
     // Widget común para botones de login/registro (siempre visibles)
+    final textColor = isDarkBackground ? Colors.white : Colors.black87;
     final loginButtons = Builder(
       builder: (context) {
         final l10n = AppLocalizations.of(context);
@@ -87,11 +94,7 @@ class WelcomeNavbar extends StatelessWidget implements PreferredSizeWidget {
               onPressed: onNavigateToLogin,
               child: Text(
                 l10n?.register ?? 'Regístrate',
-                style: GoogleFonts.exo(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: GoogleFonts.exo(color: textColor, fontSize: 16, fontWeight: FontWeight.w600),
               ),
             ),
             const SizedBox(width: 8),
@@ -100,7 +103,7 @@ class WelcomeNavbar extends StatelessWidget implements PreferredSizeWidget {
               child: Text(
                 l10n?.login ?? 'Iniciar sesión',
                 style: GoogleFonts.exo(
-                  color: Colors.white,
+                  color: textColor,
                   fontSize: 16,
                   decoration: TextDecoration.underline,
                 ),
@@ -153,130 +156,61 @@ class WelcomeNavbar extends StatelessWidget implements PreferredSizeWidget {
           final navWeddings = (l10n != null && !l10n.navWeddings.startsWith('nav.'))
               ? l10n.navWeddings
               : 'Bodas';
-          final navTerms = (l10n != null && !l10n.navTerms.startsWith('nav.'))
-              ? l10n.navTerms
-              : 'Términos';
 
           return Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              // Inicio
+              // 1. Inicio
               _buildNavItem(navHome, () {
-                // Navegar a /welcome siempre
                 onNavigateToWelcomePath();
               }),
               const SizedBox(width: 20),
-              // Destinos
+              // 2. Destinos
               _buildNavItem(navDestination, () {
-                if (kDebugMode) {
-                  debugPrint('[WelcomeNavbar] Botón Destinos presionado');
-                  debugPrint(
-                    '[WelcomeNavbar] onNavigateToDestination es null: ${onNavigateToDestination == null}',
-                  );
-                }
                 if (onNavigateToDestination != null) {
                   onNavigateToDestination!();
-                } else {
-                  if (kDebugMode) {
-                    debugPrint(
-                      '[WelcomeNavbar] ⚠️ onNavigateToDestination es null, no se puede navegar',
-                    );
-                  }
                 }
               }),
               const SizedBox(width: 20),
-              // Servicios
+              // 3. Servicios
               _buildNavItem(navService, () {
-                if (kDebugMode) {
-                  debugPrint('[WelcomeNavbar] Botón Servicios presionado');
-                  debugPrint(
-                    '[WelcomeNavbar] onNavigateToServices es null: ${onNavigateToServices == null}',
-                  );
-                }
                 if (onNavigateToServices != null) {
                   onNavigateToServices!();
-                } else {
-                  if (kDebugMode) {
-                    debugPrint(
-                      '[WelcomeNavbar] ⚠️ onNavigateToServices es null, no se puede navegar',
-                    );
-                  }
                 }
               }),
               const SizedBox(width: 20),
-              // Acerca de
-              _buildNavItem(navRates, () {
-                if (kDebugMode) {
-                  debugPrint('[WelcomeNavbar] Botón Acerca de presionado');
-                  debugPrint(
-                    '[WelcomeNavbar] onNavigateToAbout es null: ${onNavigateToAbout == null}',
-                  );
-                }
-                if (onNavigateToAbout != null) {
-                  onNavigateToAbout!();
-                } else {
-                  if (kDebugMode) {
-                    debugPrint('[WelcomeNavbar] ⚠️ onNavigateToAbout es null, no se puede navegar');
-                  }
-                }
-              }),
-              const SizedBox(width: 20),
-              // Empresa
-              _buildNavItem(navCompany, () {
-                if (kDebugMode) {
-                  debugPrint('[WelcomeNavbar] Botón Empresa presionado');
-                  debugPrint(
-                    '[WelcomeNavbar] onNavigateToCompany es null: ${onNavigateToCompany == null}',
-                  );
-                }
-                if (onNavigateToCompany != null) {
-                  onNavigateToCompany!();
-                } else {
-                  if (kDebugMode) {
-                    debugPrint(
-                      '[WelcomeNavbar] ⚠️ onNavigateToCompany es null, no se puede navegar',
-                    );
-                  }
-                }
-              }),
-              const SizedBox(width: 20),
-              // Contactos
-              _buildNavItem(navContacts, () {
-                if (kDebugMode) {
-                  debugPrint('[WelcomeNavbar] Botón Contactos presionado');
-                  debugPrint(
-                    '[WelcomeNavbar] onNavigateToContacts es null: ${onNavigateToContacts == null}',
-                  );
-                }
-                if (onNavigateToContacts != null) {
-                  onNavigateToContacts!();
-                } else {
-                  if (kDebugMode) {
-                    debugPrint(
-                      '[WelcomeNavbar] ⚠️ onNavigateToContacts es null, no se puede navegar',
-                    );
-                  }
-                }
-              }),
-              const SizedBox(width: 20),
-              // Tours
+              // 4. Tours
               _buildNavItem(navTours, () {
                 if (onNavigateToTours != null) {
                   onNavigateToTours!();
                 }
               }),
               const SizedBox(width: 20),
-              // Bodas
+              // 5. Bodas/Matrimoni
               _buildNavItem(navWeddings, () {
                 if (onNavigateToWeddings != null) {
                   onNavigateToWeddings!();
                 }
               }),
               const SizedBox(width: 20),
-              // Términos
-              _buildNavItem(navTerms, () {
-                if (onNavigateToTerms != null) {
-                  onNavigateToTerms!();
+              // 6. Profesionalidad (Acerca de)
+              _buildNavItem(navRates, () {
+                if (onNavigateToAbout != null) {
+                  onNavigateToAbout!();
+                }
+              }),
+              const SizedBox(width: 20),
+              // 7. Empresa
+              _buildNavItem(navCompany, () {
+                if (onNavigateToCompany != null) {
+                  onNavigateToCompany!();
+                }
+              }),
+              const SizedBox(width: 20),
+              // 8. Contactos
+              _buildNavItem(navContacts, () {
+                if (onNavigateToContacts != null) {
+                  onNavigateToContacts!();
                 }
               }),
             ],
@@ -296,7 +230,7 @@ class WelcomeNavbar extends StatelessWidget implements PreferredSizeWidget {
             child: Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 1),
+                border: Border.all(color: textColor.withValues(alpha: 0.3), width: 1),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               child: Row(
@@ -306,11 +240,11 @@ class WelcomeNavbar extends StatelessWidget implements PreferredSizeWidget {
                   Container(
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 2),
+                      border: Border.all(color: textColor.withValues(alpha: 0.5), width: 2),
                     ),
                     child: CircleAvatar(
                       radius: 18,
-                      backgroundColor: Colors.white.withValues(alpha: 0.2),
+                      backgroundColor: textColor.withValues(alpha: 0.2),
                       backgroundImage: currentUser!.photoURL != null
                           ? NetworkImage(currentUser!.photoURL!)
                           : null,
@@ -318,7 +252,7 @@ class WelcomeNavbar extends StatelessWidget implements PreferredSizeWidget {
                         // Manejar errores de carga de imagen silenciosamente
                       },
                       child: currentUser!.photoURL == null
-                          ? const Icon(Icons.person, color: Colors.white, size: 20)
+                          ? Icon(Icons.person, color: textColor, size: 20)
                           : null,
                     ),
                   ),
@@ -327,7 +261,7 @@ class WelcomeNavbar extends StatelessWidget implements PreferredSizeWidget {
                   Text(
                     currentUser!.displayName ?? currentUser!.email?.split('@').first ?? 'Usuario',
                     style: GoogleFonts.exo(
-                      color: Colors.white,
+                      color: textColor,
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0.3,
@@ -336,7 +270,7 @@ class WelcomeNavbar extends StatelessWidget implements PreferredSizeWidget {
                   const SizedBox(width: 6),
                   Icon(
                     Icons.keyboard_arrow_down,
-                    color: Colors.white.withValues(alpha: 0.9),
+                    color: textColor.withValues(alpha: 0.9),
                     size: 20,
                   ),
                 ],

@@ -16,7 +16,7 @@ import 'destinations_screen.dart';
 import 'contacts_screen.dart';
 import 'tours_screen.dart';
 import 'weddings_screen.dart';
-import 'privacy_policy_screen.dart';
+import 'terms_screen.dart';
 
 // Constants
 const _kPrimaryColor = Color(0xFF1D4ED8);
@@ -24,15 +24,15 @@ const _kTextColor = Color(0xFF1A202C);
 const _kSpacing = 16.0;
 const _kBorderRadius = 12.0;
 
-/// Pantalla de Términos y Condiciones
-class TermsScreen extends StatefulWidget {
-  const TermsScreen({super.key});
+/// Pantalla de Privacy Policy
+class PrivacyPolicyScreen extends StatefulWidget {
+  const PrivacyPolicyScreen({super.key});
 
   @override
-  State<TermsScreen> createState() => _TermsScreenState();
+  State<PrivacyPolicyScreen> createState() => _PrivacyPolicyScreenState();
 }
 
-class _TermsScreenState extends State<TermsScreen> {
+class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
   User? _currentUser;
   StreamSubscription<User?>? _authSubscription;
 
@@ -156,7 +156,11 @@ class _TermsScreenState extends State<TermsScreen> {
             context,
           ).pushReplacement(MaterialPageRoute(builder: (context) => const WeddingsScreen()));
         },
-        onNavigateToTerms: null, // Ya estamos en esta pantalla
+        onNavigateToTerms: () {
+          Navigator.of(
+            context,
+          ).pushReplacement(MaterialPageRoute(builder: (context) => const TermsScreen()));
+        },
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -193,12 +197,12 @@ class _TermsScreenState extends State<TermsScreen> {
                   MaterialPageRoute(builder: (context) => const AcercaDeScreen()),
                 );
               },
-              onNavigateToTerms: null, // Ya estamos aquí
-              onNavigateToPrivacy: () {
+              onNavigateToTerms: () {
                 Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (context) => const PrivacyPolicyScreen()),
+                  MaterialPageRoute(builder: (context) => const TermsScreen()),
                 );
               },
+              onNavigateToPrivacy: null, // Ya estamos aquí
             ),
           ],
         ),
@@ -208,7 +212,7 @@ class _TermsScreenState extends State<TermsScreen> {
           final l10n = AppLocalizations.of(context);
           return WhatsAppFloatingButton(
             prefilledMessage:
-                l10n?.whatsappMessageWelcome ?? 'Hola, tengo una consulta sobre los términos',
+                l10n?.whatsappMessageWelcome ?? 'Hola, tengo una consulta sobre privacidad',
           );
         },
       ),
@@ -227,10 +231,10 @@ class _TermsScreenState extends State<TermsScreen> {
       ),
       child: Column(
         children: [
-          Icon(Icons.description, size: 60, color: _kPrimaryColor),
+          Icon(Icons.privacy_tip_outlined, size: 60, color: _kPrimaryColor),
           const SizedBox(height: _kSpacing * 2),
           Text(
-            l10n?.termsTitle ?? 'Términos y Condiciones',
+            l10n?.privacyTitle ?? 'Privacy Policy',
             style: GoogleFonts.exo(
               fontSize: 42,
               fontWeight: FontWeight.bold,
@@ -241,7 +245,7 @@ class _TermsScreenState extends State<TermsScreen> {
           ),
           const SizedBox(height: _kSpacing),
           Text(
-            l10n?.termsLastUpdate ?? 'Última actualización: Diciembre 2024',
+            l10n?.privacyLastUpdate ?? 'Last update: December 2024',
             style: GoogleFonts.exo(fontSize: 14, color: Colors.grey.shade600),
           ),
         ],
@@ -258,169 +262,92 @@ class _TermsScreenState extends State<TermsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Introducción
-          Text(
-            l10n?.termsIntro ?? '',
-            style: GoogleFonts.exo(fontSize: 16, color: Colors.grey.shade700, height: 1.8, fontWeight: FontWeight.w500),
-            textAlign: TextAlign.justify,
+          // Introduction
+          _buildSection(
+            l10n?.privacyPolicyTitle ?? 'The Policy',
+            l10n?.privacyIntro ??
+                'This privacy policy notice is served by Eugenia Travel Consultancy & Italy under the website https://www.eugeniastravelconsultancy.com. The purpose of this policy is to explain to you how we control, process, handle and protect your personal information through the business and while you browse or use this website.',
+          ),
+          const SizedBox(height: _kSpacing * 3),
+
+          // Definitions
+          _buildSection(
+            l10n?.privacyDefinitionsTitle ?? 'Policy Key Definitions',
+            '',
+          ),
+          _buildBullet(l10n?.privacyDefWe ?? '"I", "our", "us", or "we" refer to the business, Eugenia Travel Consultancy.'),
+          _buildBullet(l10n?.privacyDefYou ?? '"you", "the user" refer to the person(s) using this website.'),
+          _buildBullet(l10n?.privacyDefGDPR ?? 'GDPR means General Data Protection Act.'),
+          _buildBullet(l10n?.privacyDefPECR ?? 'PECR means Privacy & Electronic Communications Regulation.'),
+          _buildBullet(l10n?.privacyDefCookies ?? 'Cookies mean small files stored on a users computer or device.'),
+          const SizedBox(height: _kSpacing * 3),
+
+          // GDPR Principles
+          _buildSection(
+            l10n?.privacyGDPRTitle ?? 'Key Principles of GDPR',
+            l10n?.privacyGDPRContent ?? 'Our privacy policy embodies the following key principles: (a) Lawfulness, fairness and transparency, (b) Purpose limitation, (c) Data minimisation, (d) Accuracy, (e) Storage limitation, (f) Integrity and confidence, (g) Accountability.',
+          ),
+          const SizedBox(height: _kSpacing * 3),
+
+          // Your Rights
+          _buildSection(
+            l10n?.privacyRightsTitle ?? 'Your Individual Rights',
+            l10n?.privacyRightsIntro ?? 'Under the GDPR your rights are as follows:',
+          ),
+          _buildBullet(l10n?.privacyRight1 ?? 'the right to be informed'),
+          _buildBullet(l10n?.privacyRight2 ?? 'the right of access'),
+          _buildBullet(l10n?.privacyRight3 ?? 'the right to rectification'),
+          _buildBullet(l10n?.privacyRight4 ?? 'the right to erasure'),
+          _buildBullet(l10n?.privacyRight5 ?? 'the right to restrict processing'),
+          _buildBullet(l10n?.privacyRight6 ?? 'the right to data portability'),
+          _buildBullet(l10n?.privacyRight7 ?? 'the right to object'),
+          _buildBullet(l10n?.privacyRight8 ?? 'the right not to be subject to automated decision-making including profiling'),
+          const SizedBox(height: _kSpacing * 3),
+
+          // Cookies
+          _buildSection(
+            l10n?.privacyCookiesTitle ?? 'Internet Cookies',
+            l10n?.privacyCookiesContent ?? 'We use cookies on this website to provide you with a better user experience. We do this by placing a small text file on your device / computer hard drive to track how you use the website, to record or log whether you have seen particular messages that we display, to keep you logged into the website where applicable, to display relevant adverts or content.',
+          ),
+          const SizedBox(height: _kSpacing * 3),
+
+          // Data Security
+          _buildSection(
+            l10n?.privacySecurityTitle ?? 'Data Security and Protection',
+            l10n?.privacySecurityContent ?? 'We ensure the security of any personal information we hold by using secure data storage technologies and precise procedures in how we store, access and manage that information. Our methods meet the GDPR compliance requirement.',
+          ),
+          const SizedBox(height: _kSpacing * 3),
+
+          // Email Marketing
+          _buildSection(
+            l10n?.privacyEmailTitle ?? 'Email Marketing Messages & Subscription',
+            l10n?.privacyEmailContent ?? 'Under the GDPR we use the consent lawful basis for anyone subscribing to our newsletter or marketing mailing list. We only collect certain data about you. Any email marketing messages we send are done so through an EMS, email marketing service provider.',
           ),
           const SizedBox(height: _kSpacing * 4),
-          
-          // Sección 1: PREMESAS
-          _buildSection(
-            '1. ${l10n?.termsSection1Title ?? 'PREMISAS'}',
-            l10n?.termsSection1_1 ?? '',
-          ),
-          const SizedBox(height: _kSpacing * 2),
-          _buildSubSection(l10n?.termsSection1_2 ?? ''),
-          const SizedBox(height: _kSpacing * 2),
-          _buildSubSection(l10n?.termsSection1_3 ?? ''),
-          const SizedBox(height: _kSpacing),
-          _buildSubSection(l10n?.termsSection1_3a ?? ''),
-          const SizedBox(height: _kSpacing),
-          _buildSubSection(l10n?.termsSection1_3b ?? ''),
-          const SizedBox(height: _kSpacing * 3),
-          
-          // Sección 2: RESERVAS
-          _buildSection(
-            '2. ${l10n?.termsSection2Title ?? 'RESERVAS'}',
-            l10n?.termsSection2_1 ?? '',
-          ),
-          const SizedBox(height: _kSpacing * 2),
-          _buildSubSection(l10n?.termsSection2_2 ?? ''),
-          const SizedBox(height: _kSpacing),
-          _buildSubSection(l10n?.termsSection2_2b ?? ''),
-          const SizedBox(height: _kSpacing),
-          _buildSubSection(l10n?.termsSection2_2c ?? ''),
-          const SizedBox(height: _kSpacing),
-          _buildSubSection(l10n?.termsSection2_2d ?? ''),
-          const SizedBox(height: _kSpacing * 2),
-          _buildSubSection(l10n?.termsSection2_3 ?? ''),
-          const SizedBox(height: _kSpacing),
-          _buildSubSection(l10n?.termsSection2_3b ?? ''),
-          const SizedBox(height: _kSpacing * 2),
-          _buildSubSection(l10n?.termsSection2_4 ?? ''),
-          const SizedBox(height: _kSpacing),
-          _buildSubSection(l10n?.termsSection2_5 ?? ''),
-          const SizedBox(height: _kSpacing),
-          _buildSubSection(l10n?.termsSection2_6 ?? ''),
-          const SizedBox(height: _kSpacing * 3),
-          
-          // Sección 3: RECESO Y PENALIDADES
-          _buildSection(
-            '3. ${l10n?.termsSection3Title ?? 'RECESO Y PENALIDADES'}',
-            l10n?.termsSection3_1 ?? '',
-          ),
-          const SizedBox(height: _kSpacing * 3),
-          
-          // Sección 4: LEY APLICABLE
-          _buildSection(
-            '4. ${l10n?.termsSection4Title ?? 'LEY APLICABLE – JURISDICCIÓN'}',
-            l10n?.termsSection4_1 ?? '',
-          ),
-          const SizedBox(height: _kSpacing * 3),
-          
-          // Sección 5: EQUIPAJE
-          _buildSection(
-            '5. ${l10n?.termsSection5Title ?? 'EQUIPAJE'}',
-            l10n?.termsSection5_1 ?? '',
-          ),
-          const SizedBox(height: _kSpacing),
-          _buildSubSection(l10n?.termsSection5_1b ?? ''),
-          const SizedBox(height: _kSpacing * 2),
-          _buildSubSection(l10n?.termsSection5_2 ?? ''),
-          const SizedBox(height: _kSpacing * 3),
-          
-          // Sección 6: RETRASOS
-          _buildSection(
-            '6. ${l10n?.termsSection6Title ?? 'RETRASOS'}',
-            l10n?.termsSection6_1 ?? '',
-          ),
-          const SizedBox(height: _kSpacing * 2),
-          _buildSubSection(l10n?.termsSection6_2 ?? ''),
-          const SizedBox(height: _kSpacing),
-          _buildSubSection(l10n?.termsSection6_2b ?? ''),
-          const SizedBox(height: _kSpacing * 2),
-          _buildSubSection(l10n?.termsSection6_3 ?? ''),
-          const SizedBox(height: _kSpacing),
-          _buildSubSection(l10n?.termsSection6_3b ?? ''),
-          const SizedBox(height: _kSpacing * 3),
-          
-          // Sección 7: MODALIDADES DEL TRANSPORTE
-          _buildSection(
-            '7. ${l10n?.termsSection7Title ?? 'MODALIDADES DEL TRANSPORTE'}',
-            l10n?.termsSection7_1 ?? '',
-          ),
-          const SizedBox(height: _kSpacing),
-          _buildSubSection(l10n?.termsSection7_2 ?? ''),
-          const SizedBox(height: _kSpacing),
-          _buildSubSection(l10n?.termsSection7_3 ?? ''),
-          const SizedBox(height: _kSpacing),
-          _buildSubSection(l10n?.termsSection7_4 ?? ''),
-          const SizedBox(height: _kSpacing),
-          _buildSubSection(l10n?.termsSection7_5 ?? ''),
-          const SizedBox(height: _kSpacing * 3),
-          
-          // Sección 8: CANCELACIONES
-          _buildSection(
-            '8. ${l10n?.termsSection8Title ?? 'CANCELACIONES, MODIFICACIONES, REEMBOLSOS'}',
-            l10n?.termsSection8_1 ?? '',
-          ),
-          const SizedBox(height: _kSpacing),
-          _buildSubSection(l10n?.termsSection8_1b ?? ''),
-          const SizedBox(height: _kSpacing),
-          _buildSubSection(l10n?.termsSection8_1c ?? ''),
-          const SizedBox(height: _kSpacing * 2),
-          _buildSubSection(l10n?.termsSection8_2 ?? ''),
-          const SizedBox(height: _kSpacing * 2),
-          _buildSubSection(l10n?.termsSection8_3 ?? ''),
-          const SizedBox(height: _kSpacing * 3),
-          
-          // Sección 9: IDIOMA
-          _buildSection(
-            '9. ${l10n?.termsSection9Title ?? 'IDIOMA'}',
-            l10n?.termsSection9_1 ?? '',
-          ),
-          const SizedBox(height: _kSpacing * 3),
-          
-          // Sección 10: PRIVACIDAD
-          _buildSection(
-            '10. ${l10n?.termsSection10Title ?? 'INFORMATIVA PARA LA PRIVACIDAD'}',
-            l10n?.termsSection10_1 ?? '',
-          ),
-          const SizedBox(height: _kSpacing * 2),
-          _buildSubSection(l10n?.termsSection10_2 ?? ''),
-          const SizedBox(height: _kSpacing),
-          _buildSubSection(l10n?.termsSection10_3 ?? ''),
-          const SizedBox(height: _kSpacing * 4),
-          
-          // APROBACIÓN ESPECÍFICA DE CLÁUSULAS
-          _buildSection(
-            l10n?.termsSpecificApprovalTitle ?? 'APROBACIÓN ESPECÍFICA DE CLÁUSULAS',
-            l10n?.termsSpecificApproval ?? '',
-          ),
-          const SizedBox(height: _kSpacing * 2),
-          _buildBullet(l10n?.termsClause1 ?? ''),
-          _buildBullet(l10n?.termsClause2 ?? ''),
-          _buildBullet(l10n?.termsClause3 ?? ''),
-          _buildBullet(l10n?.termsClause4 ?? ''),
-          _buildBullet(l10n?.termsClause5 ?? ''),
-          _buildBullet(l10n?.termsClause6 ?? ''),
-          _buildBullet(l10n?.termsClause7 ?? ''),
-          const SizedBox(height: _kSpacing * 4),
-          
+
           _buildContactBox(context),
         ],
       ),
     );
   }
 
-  Widget _buildSubSection(String content) {
-    if (content.isEmpty) return const SizedBox.shrink();
-    return Text(
-      content,
-      style: GoogleFonts.exo(fontSize: 15, color: Colors.grey.shade700, height: 1.8),
-      textAlign: TextAlign.justify,
+  Widget _buildSection(String title, String content) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: GoogleFonts.exo(fontSize: 22, fontWeight: FontWeight.bold, color: _kTextColor),
+        ),
+        if (content.isNotEmpty) ...[
+          const SizedBox(height: _kSpacing),
+          Text(
+            content,
+            style: GoogleFonts.exo(fontSize: 15, color: Colors.grey.shade700, height: 1.8),
+            textAlign: TextAlign.justify,
+          ),
+        ],
+      ],
     );
   }
 
@@ -443,24 +370,6 @@ class _TermsScreenState extends State<TermsScreen> {
     );
   }
 
-  Widget _buildSection(String title, String content) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: GoogleFonts.exo(fontSize: 22, fontWeight: FontWeight.bold, color: _kTextColor),
-        ),
-        const SizedBox(height: _kSpacing),
-        Text(
-          content,
-          style: GoogleFonts.exo(fontSize: 15, color: Colors.grey.shade700, height: 1.8),
-          textAlign: TextAlign.justify,
-        ),
-      ],
-    );
-  }
-
   Widget _buildContactBox(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
@@ -477,13 +386,13 @@ class _TermsScreenState extends State<TermsScreen> {
           Icon(Icons.contact_support, size: 50, color: _kPrimaryColor),
           const SizedBox(height: _kSpacing),
           Text(
-            l10n?.termsQuestions ?? '¿Preguntas sobre nuestros términos?',
+            l10n?.privacyQuestions ?? '¿Preguntas sobre privacidad?',
             style: GoogleFonts.exo(fontSize: 20, fontWeight: FontWeight.bold, color: _kTextColor),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: _kSpacing),
           Text(
-            l10n?.termsContactUs ?? 'Contáctanos y estaremos encantados de ayudarte',
+            l10n?.privacyContactUs ?? 'Contáctanos y estaremos encantados de ayudarte',
             style: GoogleFonts.exo(fontSize: 15, color: Colors.grey.shade600),
             textAlign: TextAlign.center,
           ),
@@ -492,3 +401,4 @@ class _TermsScreenState extends State<TermsScreen> {
     );
   }
 }
+

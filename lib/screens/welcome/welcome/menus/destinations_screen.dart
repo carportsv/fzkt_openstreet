@@ -11,6 +11,10 @@ import 'company_screen.dart';
 import 'contacts_screen.dart';
 import 'servicios_screen.dart';
 import 'acerca_de_screen.dart';
+import 'tours_screen.dart';
+import 'weddings_screen.dart';
+import 'terms_screen.dart';
+import 'privacy_policy_screen.dart';
 import '../../../../auth/login_screen.dart';
 import '../../../../shared/widgets/app_logo_header.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -298,6 +302,58 @@ class _DestinationsScreenState extends State<DestinationsScreen> {
     }
   }
 
+  void _navigateToTours() {
+    if (!mounted) return;
+    try {
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (context) => const ToursScreen()));
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[DestinationsScreen] ❌ Error navegando a ToursScreen: $e');
+      }
+    }
+  }
+
+  void _navigateToWeddings() {
+    if (!mounted) return;
+    try {
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (context) => const WeddingsScreen()));
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[DestinationsScreen] ❌ Error navegando a WeddingsScreen: $e');
+      }
+    }
+  }
+
+  void _navigateToTerms() {
+    if (!mounted) return;
+    try {
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (context) => const TermsScreen()));
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[DestinationsScreen] ❌ Error navegando a TermsScreen: $e');
+      }
+    }
+  }
+
+  void _navigateToPrivacy() {
+    if (!mounted) return;
+    try {
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (context) => const PrivacyPolicyScreen()));
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[DestinationsScreen] ❌ Error navegando a PrivacyPolicyScreen: $e');
+      }
+    }
+  }
+
   void _navigateToServices() {
     if (kDebugMode) {
       debugPrint('[DestinationsScreen] _navigateToServices llamado');
@@ -352,8 +408,11 @@ class _DestinationsScreenState extends State<DestinationsScreen> {
         onNavigateToCompany: _navigateToCompany,
         onNavigateToServices: _navigateToServices,
         onNavigateToAbout: _navigateToAbout,
-        onNavigateToDestination: _navigateToDestination,
+        onNavigateToDestination: null, // Ya estamos en esta pantalla
         onNavigateToContacts: _navigateToContacts,
+        onNavigateToTours: _navigateToTours,
+        onNavigateToWeddings: _navigateToWeddings,
+        onNavigateToTerms: _navigateToTerms,
       ),
       body: Stack(
         children: [
@@ -412,6 +471,8 @@ class _DestinationsScreenState extends State<DestinationsScreen> {
                         onNavigateToContacts: _navigateToContacts,
                         onNavigateToServices: _navigateToServices,
                         onNavigateToAbout: _navigateToAbout,
+                        onNavigateToTerms: _navigateToTerms,
+                        onNavigateToPrivacy: _navigateToPrivacy,
                       ),
                     ],
                   ),
