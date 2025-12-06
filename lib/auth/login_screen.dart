@@ -43,6 +43,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     }
 
     try {
+      // Nota: La verificación de disponibilidad se hace implícitamente al llamar la función
+      // Si la función no está disponible, se lanzará un error que será capturado más abajo
+
       // En web, usar js_interop directamente
       // jsify y dartify son funciones top-level importadas condicionalmente
       final jsConfig = jsify(config);
@@ -324,7 +327,23 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           scopes: ['email', 'profile'],
         );
 
-        debugPrint('[LoginScreen] Llamando a signIn() para móvil...');
+        // IMPORTANTE: Hacer signOut primero para limpiar la caché y forzar selección de cuenta
+        // Esto asegura que el usuario pueda elegir una cuenta diferente después de cerrar sesión
+        try {
+          debugPrint(
+            '[LoginScreen] Limpiando caché de Google Sign-In para permitir selección de cuenta...',
+          );
+          await googleSignIn.signOut();
+          // Esperar un momento para que se limpie completamente
+          await Future.delayed(const Duration(milliseconds: 300));
+        } catch (e) {
+          debugPrint(
+            '[LoginScreen] ⚠️ Error al limpiar caché de Google (puede ser normal si no hay sesión): ${e.toString()}',
+          );
+          // Continuar aunque falle, puede que no haya sesión previa
+        }
+
+        debugPrint('[LoginScreen] Llamando a signIn() para móvil (con selector de cuenta)...');
         final googleUser = await googleSignIn.signIn();
         if (googleUser == null) {
           debugPrint('[LoginScreen] Usuario canceló el inicio de sesión');

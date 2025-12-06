@@ -1230,13 +1230,18 @@ class _BookingsPendingScreenState extends State<BookingsPendingScreen> {
     try {
       final supabaseClient = _supabaseService.client;
       await supabaseClient.from('messages').insert({
-        'type': 'ride_request',
+        'type': 'ride_request', // Usar tipo permitido en el schema
         'title': '🚗 Nuevo viaje asignado',
-        'message': 'Viaje: $origin → $destination',
+        'message':
+            'Tienes un nuevo viaje asignado: $origin → $destination. Revisa los detalles y acepta o rechaza.',
         'data': {'ride_id': rideId, 'action': 'driver_accept_reject'},
         'driver_id': driverId,
         'is_read': false,
       });
+
+      if (kDebugMode) {
+        debugPrint('[BookingsPending] ✅ Notificación creada para driver $driverId');
+      }
     } catch (e) {
       if (kDebugMode) {
         debugPrint('[BookingsPending] Error creando notificación para driver: $e');

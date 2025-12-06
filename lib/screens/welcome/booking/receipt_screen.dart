@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:web/web.dart' as web;
+import 'package:url_launcher/url_launcher.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../services/pdf_receipt_service.dart';
 import '../../../shared/widgets/whatsapp_floating_button.dart';
@@ -61,7 +61,7 @@ class ReceiptScreen extends StatelessWidget {
     this.notes,
   });
 
-  void _handlePrint() {
+  Future<void> _handlePrint() async {
     if (kIsWeb) {
       // Generar HTML completo del recibo
       final htmlContent =
@@ -249,28 +249,19 @@ class ReceiptScreen extends StatelessWidget {
       final dataUri = 'data:text/html;charset=utf-8,$encodedContent';
 
       try {
-        final printWindow = web.window.open(dataUri, '_blank');
-        if (printWindow != null) {
-          // Esperar a que la ventana cargue completamente antes de imprimir
-          Future.delayed(const Duration(milliseconds: 1000), () {
-            try {
-              printWindow.print();
-              // Cerrar la ventana después de un tiempo
-              Future.delayed(const Duration(seconds: 3), () {
-                try {
-                  printWindow.close();
-                } catch (e) {
-                  // Ignorar errores al cerrar
-                }
-              });
-            } catch (e) {
+        final uri = Uri.parse(dataUri);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+          // En web, después de abrir la ventana, intentar imprimir
+          if (kIsWeb) {
+            Future.delayed(const Duration(milliseconds: 1000), () {
+              // La impresión se manejará en el HTML generado
               if (kDebugMode) {
-                debugPrint('[ReceiptScreen] Error al imprimir: $e');
+                debugPrint('[ReceiptScreen] Ventana de impresión abierta');
               }
-            }
-          });
+            });
+          }
         } else {
-          // Si no se puede abrir la ventana, mostrar mensaje
           if (kDebugMode) {
             debugPrint('[ReceiptScreen] No se pudo abrir la ventana de impresión');
           }
@@ -286,31 +277,29 @@ class ReceiptScreen extends StatelessWidget {
     }
   }
 
-  void _handleEmail() {
-    if (kIsWeb) {
-      // Opción simple: usar mailto: para abrir el cliente de correo
-      final subject = Uri.encodeComponent('Recibo de Pago - $receiptNumber');
-      final body = Uri.encodeComponent(receiptText);
-      final email = clientEmail ?? '';
+  Future<void> _handleEmail() async {
+    // Usar mailto: para abrir el cliente de correo (funciona en web y móvil)
+    final subject = Uri.encodeComponent('Recibo de Pago - $receiptNumber');
+    final body = Uri.encodeComponent(receiptText);
+    final email = clientEmail ?? '';
 
-      if (email.isNotEmpty) {
-        final mailtoLink = 'mailto:$email?subject=$subject&body=$body';
-        web.window.open(mailtoLink, '_blank');
+    final mailtoLink = email.isNotEmpty
+        ? 'mailto:$email?subject=$subject&body=$body'
+        : 'mailto:?subject=$subject&body=$body';
+
+    try {
+      final uri = Uri.parse(mailtoLink);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
       } else {
-        // Si no hay email, mostrar mensaje
-        // todo: Implementar backend para envío automático
-        // Ver docs/EMAIL_IMPLEMENTATION.md para más detalles
-        if (kIsWeb) {
-          // Mostrar mensaje usando showDialog o SnackBar
-          // Por ahora, solo abrimos mailto sin email específico
-          final mailtoLink = 'mailto:?subject=$subject&body=$body';
-          web.window.open(mailtoLink, '_blank');
+        if (kDebugMode) {
+          debugPrint('[ReceiptScreen] No se pudo abrir el cliente de correo');
         }
       }
-    } else {
-      // Para móvil, usar url_launcher o share_plus
-      // todo: Implementar usando url_launcher o share_plus
-      // Ver docs/EMAIL_IMPLEMENTATION.md para más detalles
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[ReceiptScreen] Error al abrir cliente de correo: $e');
+      }
     }
   }
 
@@ -501,7 +490,7 @@ class ReceiptScreen extends StatelessWidget {
                           builder: (context) {
                             final l10n = AppLocalizations.of(context);
                             return Text(
-                              l10n?.receiptPaymentProcessed ?? 
+                              l10n?.receiptPaymentProcessed ??
                                   'Su pago ha sido procesado correctamente',
                               style: GoogleFonts.exo(fontSize: 14, color: Colors.green.shade700),
                             );
@@ -552,7 +541,8 @@ class ReceiptScreen extends StatelessWidget {
                                 builder: (context) {
                                   final l10n = AppLocalizations.of(context);
                                   return Text(
-                                    l10n?.receiptCopiedToClipboard ?? 'Recibo copiado al portapapeles',
+                                    l10n?.receiptCopiedToClipboard ??
+                                        'Recibo copiado al portapapeles',
                                   );
                                 },
                               ),
