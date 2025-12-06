@@ -37,8 +37,9 @@ class _BookingsAssignedScreenState extends State<BookingsAssignedScreen> {
     try {
       final supabaseClient = _supabaseService.client;
 
-      // Cargar viajes con status 'accepted' o 'assigned' con driver_id
-      // Hacer dos consultas separadas y combinarlas para evitar problemas con .or()
+      // Cargar viajes con driver_id asignado que estén en estado 'requested' o 'accepted'
+      // Los viajes con driver_id pero status 'requested' están asignados esperando aceptación
+      // Los viajes con status 'accepted' ya fueron aceptados por el driver
       final selectQuery = '''
         *,
         user:users!ride_requests_user_id_fkey(id, email, display_name, phone_number)
@@ -55,30 +56,36 @@ class _BookingsAssignedScreenState extends State<BookingsAssignedScreen> {
         endDateFilter = endOfDay.toIso8601String();
       }
 
-      // Consulta para bookings con status 'assigned'
-      // No filtramos por driver_id porque si el status es 'assigned', ya tiene driver
-      var assignedQuery = supabaseClient
+      // Consulta para bookings con driver_id asignado pero aún en 'requested' (esperando aceptación)
+      var requestedWithDriverQuery = supabaseClient
           .from('ride_requests')
           .select(selectQuery)
-          .eq('status', 'assigned');
+          .eq('status', 'requested')
+          .not('driver_id', 'is', null);
 
-      // Consulta para bookings con status 'accepted'
+      // Consulta para bookings con status 'accepted' (ya aceptados por el driver)
       var acceptedQuery = supabaseClient
           .from('ride_requests')
           .select(selectQuery)
-          .eq('status', 'accepted');
+          .eq('status', 'accepted')
+          .not('driver_id', 'is', null);
 
       // Aplicar filtros de fecha si existen
       if (dateFilter != null && endDateFilter != null) {
-        assignedQuery = assignedQuery.gte('created_at', dateFilter).lt('created_at', endDateFilter);
+        requestedWithDriverQuery = requestedWithDriverQuery
+            .gte('created_at', dateFilter)
+            .lt('created_at', endDateFilter);
         acceptedQuery = acceptedQuery.gte('created_at', dateFilter).lt('created_at', endDateFilter);
       }
 
       // Ejecutar ambas consultas en paralelo
       if (kDebugMode) {
-        debugPrint('[BookingsAssigned] Ejecutando consulta para status "assigned"...');
+        debugPrint('[BookingsAssigned] Ejecutando consulta para "requested" con driver_id...');
       }
-      final assignedResponse = await assignedQuery.order('created_at', ascending: false);
+      final requestedWithDriverResponse = await requestedWithDriverQuery.order(
+        'created_at',
+        ascending: false,
+      );
 
       if (kDebugMode) {
         debugPrint('[BookingsAssigned] Ejecutando consulta para status "accepted"...');
@@ -86,22 +93,25 @@ class _BookingsAssignedScreenState extends State<BookingsAssignedScreen> {
       final acceptedResponse = await acceptedQuery.order('created_at', ascending: false);
 
       // Combinar los resultados y eliminar duplicados
-      final assignedList = (assignedResponse as List).cast<Map<String, dynamic>>();
+      final requestedWithDriverList = (requestedWithDriverResponse as List)
+          .cast<Map<String, dynamic>>();
       final acceptedList = (acceptedResponse as List).cast<Map<String, dynamic>>();
 
       if (kDebugMode) {
-        debugPrint('[BookingsAssigned] Bookings con status "assigned": ${assignedList.length}');
+        debugPrint(
+          '[BookingsAssigned] Bookings "requested" con driver_id: ${requestedWithDriverList.length}',
+        );
         debugPrint('[BookingsAssigned] Bookings con status "accepted": ${acceptedList.length}');
-        for (var ride in assignedList) {
+        for (var ride in requestedWithDriverList) {
           debugPrint(
-            '[BookingsAssigned] Assigned - ID: ${ride['id']}, Status: ${ride['status']}, Driver ID: ${ride['driver_id']}',
+            '[BookingsAssigned] Requested+Driver - ID: ${ride['id']}, Status: ${ride['status']}, Driver ID: ${ride['driver_id']}',
           );
         }
       }
 
       // Usar un Set para eliminar duplicados basado en el ID
       final Map<String, Map<String, dynamic>> uniqueRides = {};
-      for (var ride in assignedList) {
+      for (var ride in requestedWithDriverList) {
         final id = ride['id']?.toString() ?? '';
         if (id.isNotEmpty) {
           uniqueRides[id] = ride;

@@ -90,16 +90,24 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           .select('id')
           .eq('is_scheduled', true);
 
-      final assignedData = await supabaseClient
+      // Contar bookings asignados: 'requested' con driver_id (esperando aceptación) + 'accepted' (ya aceptados)
+      // Hacer dos consultas separadas y sumar los resultados
+      final requestedWithDriverData = await supabaseClient
           .from('ride_requests')
           .select('id')
-          .or('status.eq.accepted,status.eq.assigned')
+          .eq('status', 'requested')
           .not('driver_id', 'is', null);
 
       final acceptedData = await supabaseClient
           .from('ride_requests')
           .select('id')
-          .eq('status', 'accepted');
+          .eq('status', 'accepted')
+          .not('driver_id', 'is', null);
+
+      final assignedData = [...(requestedWithDriverData as List), ...(acceptedData as List)];
+
+      // acceptedData ya se calculó arriba para assignedData
+      final acceptedCount = (acceptedData as List).length;
 
       final completedData = await supabaseClient
           .from('ride_requests')
@@ -134,8 +142,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           _bookingsNewCount = (newData as List).length;
           _bookingsPendingCount = (pendingData as List).length;
           _bookingsFutureCount = (futureData as List).length;
-          _bookingsAssignedCount = (assignedData as List).length;
-          _bookingsAcceptedCount = (acceptedData as List).length;
+          _bookingsAssignedCount = assignedData.length;
+          _bookingsAcceptedCount = acceptedCount;
           _bookingsCompletedCount = (completedData as List).length;
           _bookingsPaymentPendingCount = (paymentPendingData as List).length;
           _bookingsCancelledCount = (cancelledData as List).length;
@@ -305,6 +313,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       case 'home':
       default:
         content = const _HomeDashboardContent();
+        // Recargar contadores cuando se selecciona home
+        _loadBookingCounts();
         break;
     }
 

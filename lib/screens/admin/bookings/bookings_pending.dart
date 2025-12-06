@@ -1144,6 +1144,17 @@ class _BookingsPendingScreenState extends State<BookingsPendingScreen> {
                                     .update(updateData)
                                     .eq('id', ride['id']);
 
+                                // Si se asignó un driver y el status es 'requested', crear notificación
+                                if (selectedDriverId != null &&
+                                    statusController.text == 'requested') {
+                                  await _createDriverNotification(
+                                    rideId: ride['id'].toString(),
+                                    driverId: selectedDriverId!,
+                                    origin: originController.text,
+                                    destination: destinationController.text,
+                                  );
+                                }
+
                                 if (!mounted) return;
                                 if (!context.mounted) return;
 
@@ -1545,15 +1556,16 @@ class _BookingsPendingScreenState extends State<BookingsPendingScreen> {
 
                                           if (kDebugMode) {
                                             debugPrint(
-                                              '[BookingsPending] Asignando driver: rideId=$rideId, driverId=$selectedDriverId, status=assigned',
+                                              '[BookingsPending] Asignando driver: rideId=$rideId, driverId=$selectedDriverId',
                                             );
                                           }
 
+                                          // Actualizar solo el driver_id, mantener el status actual
+                                          // El status cambiará a 'accepted' cuando el driver acepte el viaje
                                           final updateResult = await supabaseClient
                                               .from('ride_requests')
                                               .update({
                                                 'driver_id': selectedDriverId,
-                                                'status': 'assigned',
                                                 'updated_at': DateTime.now().toIso8601String(),
                                               })
                                               .eq('id', rideId);
