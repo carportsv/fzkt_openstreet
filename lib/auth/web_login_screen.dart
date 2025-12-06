@@ -469,7 +469,7 @@ class _WebLoginScreenState extends State<WebLoginScreen> {
                           const SizedBox(height: 16),
                           ElevatedButton.icon(
                             onPressed: _isLoading ? null : _signInWithGoogle,
-                            icon: Image.asset('assets/images/google_sig.png', height: 24.0),
+                            icon: Image.asset('assets/images/otros/google_sig.png', height: 24.0),
                             label: const Text(
                               'Continuar con Google',
                               style: TextStyle(

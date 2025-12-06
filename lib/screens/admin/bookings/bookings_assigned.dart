@@ -38,6 +38,7 @@ class _BookingsAssignedScreenState extends State<BookingsAssignedScreen> {
       final supabaseClient = _supabaseService.client;
 
       // Cargar viajes con status 'accepted' o 'assigned' con driver_id
+      // Usar una consulta más explícita para asegurar que capture todos los bookings asignados
       var query = supabaseClient
           .from('ride_requests')
           .select('''
@@ -57,7 +58,15 @@ class _BookingsAssignedScreenState extends State<BookingsAssignedScreen> {
             .lt('created_at', endOfDay.toIso8601String());
       }
 
+      // Ordenar al final, después de todos los filtros
       final response = await query.order('created_at', ascending: false);
+
+      if (kDebugMode) {
+        debugPrint('[BookingsAssigned] Total de bookings asignados cargados: ${(response as List).length}');
+        for (var ride in (response as List)) {
+          debugPrint('[BookingsAssigned] Booking ID: ${ride['id']}, Status: ${ride['status']}, Driver ID: ${ride['driver_id']}');
+        }
+      }
 
       if (mounted) {
         setState(() {

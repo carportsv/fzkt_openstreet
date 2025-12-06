@@ -51,11 +51,13 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       // Llamar a la función JavaScript y convertir JSPromise a Future
       final jsPromise = firebaseAuthSignInWithGoogleJS(jsConfig);
 
-      // Usar toDart para convertir JSPromise a Future
-      // En web, toDart está disponible como extensión de JSPromise
+      // Convertir JSPromise a Future
+      // En dart:js_interop, JSPromise se convierte usando toDart
       dynamic jsResult;
       try {
-        jsResult = await (jsPromise as dynamic).toDart;
+        // Convertir JSPromise a Future usando toDart
+        // toDart es una extensión disponible en JSPromise que retorna un Future
+        jsResult = await jsPromise.toDart;
       } catch (e) {
         debugPrint('[LoginScreen] Error al convertir JSPromise: ${e.toString()}');
         // Si el error contiene "POPUP_BLOCKED", relanzar con mensaje más claro
@@ -545,7 +547,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Image.asset(
-                                    'assets/images/google_sig.png',
+                                    'assets/images/otros/google_sig.png',
                                     height: 20,
                                     width: 20,
                                     errorBuilder: (context, error, stackTrace) {

@@ -1540,7 +1540,11 @@ class _BookingsPendingScreenState extends State<BookingsPendingScreen> {
                                     : () async {
                                         // Asignar driver al viaje y notificar
                                         try {
-                                          final rideId = ride['id'] as String;
+                                          // Convertir el ID a String de forma segura
+                                          final rideId = ride['id']?.toString() ?? '';
+                                          if (rideId.isEmpty) {
+                                            throw Exception('ID del viaje no válido');
+                                          }
 
                                           await supabaseClient
                                               .from('ride_requests')
