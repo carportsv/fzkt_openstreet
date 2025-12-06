@@ -38,33 +38,83 @@ class _BookingsAssignedScreenState extends State<BookingsAssignedScreen> {
       final supabaseClient = _supabaseService.client;
 
       // Cargar viajes con status 'accepted' o 'assigned' con driver_id
-      // Usar una consulta más explícita para asegurar que capture todos los bookings asignados
-      var query = supabaseClient
-          .from('ride_requests')
-          .select('''
-            *,
-            user:users!ride_requests_user_id_fkey(id, email, display_name, phone_number)
-          ''')
-          .or('status.eq.accepted,status.eq.assigned')
-          .not('driver_id', 'is', null);
+      // Hacer dos consultas separadas y combinarlas para evitar problemas con .or()
+      final selectQuery = '''
+        *,
+        user:users!ride_requests_user_id_fkey(id, email, display_name, phone_number)
+      ''';
 
-      // Aplicar filtros de fecha si existen
+      // Preparar filtros de fecha si existen
+      String? dateFilter;
+      String? endDateFilter;
       if (_selectedDate != null) {
         final date = DateTime.parse(_selectedDate!);
         final startOfDay = DateTime(date.year, date.month, date.day);
         final endOfDay = startOfDay.add(const Duration(days: 1));
-        query = query
-            .gte('created_at', startOfDay.toIso8601String())
-            .lt('created_at', endOfDay.toIso8601String());
+        dateFilter = startOfDay.toIso8601String();
+        endDateFilter = endOfDay.toIso8601String();
       }
 
-      // Ordenar al final, después de todos los filtros
-      final response = await query.order('created_at', ascending: false);
+      // Consulta para bookings con status 'assigned'
+      var assignedQuery = supabaseClient
+          .from('ride_requests')
+          .select(selectQuery)
+          .eq('status', 'assigned')
+          .not('driver_id', 'is', null);
+
+      // Consulta para bookings con status 'accepted'
+      var acceptedQuery = supabaseClient
+          .from('ride_requests')
+          .select(selectQuery)
+          .eq('status', 'accepted')
+          .not('driver_id', 'is', null);
+
+      // Aplicar filtros de fecha si existen
+      if (dateFilter != null && endDateFilter != null) {
+        assignedQuery = assignedQuery.gte('created_at', dateFilter).lt('created_at', endDateFilter);
+        acceptedQuery = acceptedQuery.gte('created_at', dateFilter).lt('created_at', endDateFilter);
+      }
+
+      // Ejecutar ambas consultas en paralelo
+      final assignedResponse = await assignedQuery.order('created_at', ascending: false);
+      final acceptedResponse = await acceptedQuery.order('created_at', ascending: false);
+
+      // Combinar los resultados y eliminar duplicados
+      final assignedList = (assignedResponse as List).cast<Map<String, dynamic>>();
+      final acceptedList = (acceptedResponse as List).cast<Map<String, dynamic>>();
+
+      // Usar un Set para eliminar duplicados basado en el ID
+      final Map<String, Map<String, dynamic>> uniqueRides = {};
+      for (var ride in assignedList) {
+        final id = ride['id']?.toString() ?? '';
+        if (id.isNotEmpty) {
+          uniqueRides[id] = ride;
+        }
+      }
+      for (var ride in acceptedList) {
+        final id = ride['id']?.toString() ?? '';
+        if (id.isNotEmpty) {
+          uniqueRides[id] = ride;
+        }
+      }
+
+      final response = uniqueRides.values.toList();
+
+      // Ordenar por fecha de creación (más recientes primero)
+      response.sort((a, b) {
+        final dateA = a['created_at'] != null ? DateTime.parse(a['created_at']) : DateTime(1970);
+        final dateB = b['created_at'] != null ? DateTime.parse(b['created_at']) : DateTime(1970);
+        return dateB.compareTo(dateA);
+      });
 
       if (kDebugMode) {
-        debugPrint('[BookingsAssigned] Total de bookings asignados cargados: ${(response as List).length}');
+        debugPrint(
+          '[BookingsAssigned] Total de bookings asignados cargados: ${(response as List).length}',
+        );
         for (var ride in (response as List)) {
-          debugPrint('[BookingsAssigned] Booking ID: ${ride['id']}, Status: ${ride['status']}, Driver ID: ${ride['driver_id']}');
+          debugPrint(
+            '[BookingsAssigned] Booking ID: ${ride['id']}, Status: ${ride['status']}, Driver ID: ${ride['driver_id']}',
+          );
         }
       }
 

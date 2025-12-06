@@ -14,9 +14,8 @@ import '../screens/welcome/carousel/background/background_carousel.dart';
 // Importar funciones JS interop condicionalmente
 // En web: usa js_interop_web.dart con dart:js_interop
 // En móvil: usa js_interop_mobile.dart con stubs
-import 'js_interop_mobile.dart'
-    if (dart.library.html) 'js_interop_web.dart'
-    show firebaseAuthSignInWithGoogleJS, jsify, dartify;
+// Nota: Importamos sin 'show' para que las extensiones estén disponibles
+import 'js_interop_mobile.dart' if (dart.library.html) 'js_interop_web.dart';
 
 // Constants
 const _kPrimaryColor = Color(0xFF1D4ED8);
@@ -51,12 +50,10 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       // Llamar a la función JavaScript y convertir JSPromise a Future
       final jsPromise = firebaseAuthSignInWithGoogleJS(jsConfig);
 
-      // Convertir JSPromise a Future
-      // En dart:js_interop, JSPromise se convierte usando toDart
+      // Convertir JSPromise a Future usando la extensión toDart
       dynamic jsResult;
       try {
-        // Convertir JSPromise a Future usando toDart
-        // toDart es una extensión disponible en JSPromise que retorna un Future
+        // Convertir JSPromise a Future usando la extensión toDart
         jsResult = await jsPromise.toDart;
       } catch (e) {
         debugPrint('[LoginScreen] Error al convertir JSPromise: ${e.toString()}');
