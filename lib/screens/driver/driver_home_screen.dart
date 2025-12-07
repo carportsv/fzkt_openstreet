@@ -14,6 +14,7 @@ import 'driver_availability_screen.dart';
 import 'driver_ride_screen.dart';
 import 'driver_history_screen.dart';
 import 'driver_settings_screen.dart';
+import '../../services/push_notification_service.dart';
 
 class DriverHomeScreen extends StatefulWidget {
   const DriverHomeScreen({super.key});
@@ -81,6 +82,19 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
 
             if (driverId != null) {
               setState(() => _driverId = driverId);
+
+              // Guardar token FCM para el driver
+              try {
+                await PushNotificationService().saveTokenForDriver(driverId);
+                if (kDebugMode) {
+                  debugPrint('[DriverHomeScreen] ✅ Token FCM guardado para driver: $driverId');
+                }
+              } catch (e) {
+                if (kDebugMode) {
+                  debugPrint('[DriverHomeScreen] ⚠️ Error guardando token FCM: $e');
+                }
+              }
+
               // Cargar notificaciones pendientes
               await _loadNotifications(driverId);
               // Cargar viaje activo
@@ -132,7 +146,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
     }
   }
 
-  void _setupNotificationsSubscription(String driverId) {
+  void _setupNotificationsSubscription(String driverId) async {
     try {
       final supabaseClient = _supabaseService.client;
 
@@ -140,9 +154,63 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
         debugPrint('[DriverHomeScreen] 🔌 Configurando suscripción para driver: $driverId');
       }
 
+      // Verificar que Realtime esté habilitado para la tabla messages
+      // Esto es importante porque si Realtime no está habilitado, no recibiremos eventos
+      try {
+        await supabaseClient.from('messages').select('id').limit(1).maybeSingle();
+
+        if (kDebugMode) {
+          debugPrint('[DriverHomeScreen] ✅ Conexión a tabla messages verificada');
+          debugPrint(
+            '[DriverHomeScreen] ⚠️⚠️⚠️ IMPORTANTE: Realtime debe estar habilitado para recibir notificaciones',
+          );
+          debugPrint('[DriverHomeScreen] 💡 PASOS PARA HABILITAR REALTIME:');
+          debugPrint('[DriverHomeScreen] 💡 1. Ve a Supabase Dashboard > SQL Editor');
+          debugPrint(
+            '[DriverHomeScreen] 💡 2. Ejecuta el script: database/enable-realtime-messages.sql',
+          );
+          debugPrint('[DriverHomeScreen] 💡 3. O ejecuta directamente:');
+          debugPrint(
+            '[DriverHomeScreen] 💡    ALTER PUBLICATION supabase_realtime ADD TABLE messages;',
+          );
+          debugPrint('[DriverHomeScreen] 💡 4. Verifica con:');
+          debugPrint(
+            '[DriverHomeScreen] 💡    SELECT * FROM pg_publication_tables WHERE tablename = '
+            'messages'
+            ';',
+          );
+          debugPrint(
+            '[DriverHomeScreen] 💡 5. Si NO aparece ninguna fila, Realtime NO está habilitado',
+          );
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('[DriverHomeScreen] ⚠️ Error verificando tabla messages: $e');
+        }
+      }
+
+      // Cancelar suscripción anterior si existe
+      _notificationsChannel?.unsubscribe();
+
+      if (kDebugMode) {
+        debugPrint(
+          '[DriverHomeScreen] 🔍 Tipo de driverId: ${driverId.runtimeType}, valor: $driverId',
+        );
+      }
+
       // Suscribirse a nuevas notificaciones para este driver
+      // Usar un nombre de canal único para evitar conflictos
+      final channelName = 'driver-notifications-$driverId-${DateTime.now().millisecondsSinceEpoch}';
+      if (kDebugMode) {
+        debugPrint('[DriverHomeScreen] 📡 Nombre del canal: $channelName');
+      }
+
+      // Pequeño delay para asegurar que la conexión WebSocket esté lista
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      // Suscripción principal con filtro
       _notificationsChannel = supabaseClient
-          .channel('driver-notifications-$driverId')
+          .channel(channelName)
           .onPostgresChanges(
             event: PostgresChangeEvent.insert,
             schema: 'public',
@@ -155,9 +223,21 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
             callback: (payload) {
               if (kDebugMode) {
                 debugPrint(
-                  '[DriverHomeScreen] 🔔 Payload recibido - EventType: ${payload.eventType}',
+                  '[DriverHomeScreen] 🔔🔔🔔 CALLBACK EJECUTADO - EventType: ${payload.eventType}',
                 );
                 debugPrint('[DriverHomeScreen] 🔔 Payload completo: $payload');
+                debugPrint('[DriverHomeScreen] 🔔 newRecord: ${payload.newRecord}');
+                debugPrint('[DriverHomeScreen] 🔔 oldRecord: ${payload.oldRecord}');
+
+                // Verificar que el driver_id coincida
+                final newRecord = payload.newRecord;
+                final recordDriverId = newRecord['driver_id']?.toString();
+                debugPrint('[DriverHomeScreen] 🔍 Comparando driver_id:');
+                debugPrint('[DriverHomeScreen]   - Esperado: $driverId (${driverId.runtimeType})');
+                debugPrint(
+                  '[DriverHomeScreen]   - Recibido: $recordDriverId (${recordDriverId.runtimeType})',
+                );
+                debugPrint('[DriverHomeScreen]   - Coinciden: ${driverId == recordDriverId}');
               }
 
               // Recargar notificaciones cuando se inserta una nueva
@@ -168,8 +248,45 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                   );
                 }
 
+                // Obtener datos de la notificación
+                final newRecord = payload.newRecord;
+                final title = (newRecord['title'] as String?) ?? '🚗 ¡Nuevo viaje asignado!';
+                final message =
+                    (newRecord['message'] as String?) ??
+                    'Tienes un nuevo viaje asignado. Toca para ver detalles.';
+
+                if (kDebugMode) {
+                  debugPrint('[DriverHomeScreen] 🔔 Preparando para mostrar notificación:');
+                  debugPrint('[DriverHomeScreen]   - Título: $title');
+                  debugPrint('[DriverHomeScreen]   - Mensaje: $message');
+                }
+
                 // Reproducir sonido y vibración
                 _playNotificationSound();
+
+                // Mostrar notificación local del sistema (con sonido) - sin await
+                if (kDebugMode) {
+                  debugPrint(
+                    '[DriverHomeScreen] 📱 Llamando a PushNotificationService.showLocalNotification...',
+                  );
+                }
+                PushNotificationService()
+                    .showLocalNotification(
+                      title: title,
+                      body: message,
+                      data: {'type': 'ride_request', 'driver_id': driverId},
+                    )
+                    .then((_) {
+                      if (kDebugMode) {
+                        debugPrint('[DriverHomeScreen] ✅ Notificación local mostrada exitosamente');
+                      }
+                    })
+                    .catchError((e, stackTrace) {
+                      if (kDebugMode) {
+                        debugPrint('[DriverHomeScreen] ❌ Error mostrando notificación local: $e');
+                        debugPrint('[DriverHomeScreen] Stack trace: $stackTrace');
+                      }
+                    });
 
                 // Recargar notificaciones y datos
                 if (_driverId != null) {
@@ -180,7 +297,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                 // Mostrar snackbar de notificación mejorado
                 if (mounted) {
                   // Usar un pequeño delay para asegurar que el estado se actualice
-                  Future.delayed(const Duration(milliseconds: 300), () {
+                  Future.delayed(const Duration(milliseconds: 500), () {
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
@@ -205,7 +322,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Text(
-                                      '🚗 ¡Nuevo viaje asignado!',
+                                      title,
                                       style: GoogleFonts.exo(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
@@ -214,7 +331,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      'Tienes un nuevo viaje asignado. Toca para ver detalles.',
+                                      message,
                                       style: GoogleFonts.exo(fontSize: 13, color: Colors.white70),
                                     ),
                                   ],
@@ -252,9 +369,23 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
           )
           .subscribe((status, [error]) {
             if (kDebugMode) {
-              debugPrint('[DriverHomeScreen] 📡 Estado de suscripción: $status');
-              if (error != null) {
-                debugPrint('[DriverHomeScreen] ❌ Error en suscripción: $error');
+              if (status == RealtimeSubscribeStatus.subscribed) {
+                debugPrint(
+                  '[DriverHomeScreen] ✅ Suscripción ACTIVA - Escuchando cambios en messages para driver_id=$driverId',
+                );
+              } else if (status == RealtimeSubscribeStatus.channelError) {
+                // Error de conexión inicial es normal, Supabase se reconecta automáticamente
+                if (error != null) {
+                  final closeEvent = error as RealtimeCloseEvent?;
+                  if (closeEvent?.code == 1006) {
+                    // Código 1006 = conexión cerrada anormalmente (normal durante inicialización)
+                    debugPrint('[DriverHomeScreen] ⚠️ Reintentando conexión... (error temporal)');
+                  } else {
+                    debugPrint('[DriverHomeScreen] ⚠️ Error en suscripción: $error');
+                  }
+                }
+              } else {
+                debugPrint('[DriverHomeScreen] 📡 Estado de suscripción: $status');
               }
             }
           });
@@ -295,7 +426,8 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
 
   void _startAutoRefresh() {
     _refreshTimer?.cancel();
-    _refreshTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
+    // Reducir frecuencia de refresh a 30 segundos para evitar problemas de rendimiento
+    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
       if (_driverId != null && mounted) {
         _refreshHomeData();
       }

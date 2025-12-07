@@ -1,15 +1,18 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'package:provider/provider.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'auth/firebase_options.dart';
 import 'auth/supabase_service.dart';
 import 'router/route_handler.dart';
 import 'l10n/app_localizations.dart';
 import 'l10n/locale_provider.dart';
+import 'services/push_notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -85,6 +88,38 @@ void main() async {
   } else {
     if (kDebugMode) {
       debugPrint('⚠️ Supabase no se inicializará: variables de entorno no disponibles');
+    }
+  }
+
+  // Inicializar servicio de notificaciones push (solo en móvil, no en web)
+  if (!kIsWeb && envLoaded) {
+    try {
+      // Configurar handler para mensajes en segundo plano
+      // Nota: Esto puede fallar en hot reload, pero es normal
+      try {
+        FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint(
+            '⚠️ No se pudo configurar background handler (puede ser normal en hot reload): $e',
+          );
+        }
+      }
+
+      // Inicializar servicio de notificaciones
+      await PushNotificationService().initialize();
+      debugPrint('✅ Servicio de notificaciones push inicializado');
+    } on MissingPluginException catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          '⚠️ Warning: Plugins nativos no disponibles (ejecuta flutter clean && flutter run): $e',
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ Warning: Could not initialize push notifications: $e');
+        debugPrint('💡 Ejecuta: flutter clean && flutter pub get && flutter run');
+      }
     }
   }
 

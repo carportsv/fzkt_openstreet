@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../auth/supabase_service.dart';
 
 class BookingsAssignedScreen extends StatefulWidget {
@@ -426,6 +427,7 @@ class _BookingsAssignedScreenState extends State<BookingsAssignedScreen> {
                 _buildHeaderCell('Payment', flex: 1),
                 _buildHeaderCell('Fare', flex: 1),
                 _buildHeaderCell('Driver', flex: 1),
+                _buildHeaderCell('Acciones', flex: 1),
               ],
             )
           : const Text(
@@ -597,6 +599,26 @@ class _BookingsAssignedScreenState extends State<BookingsAssignedScreen> {
               overflow: TextOverflow.ellipsis,
             ),
           ),
+          Expanded(
+            flex: 1,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.edit, size: 18),
+                  color: Colors.blue,
+                  tooltip: 'Cambiar conductor',
+                  onPressed: () => _showChangeDriverDialog(ride),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.undo, size: 18),
+                  color: Colors.orange,
+                  tooltip: 'Regresar a pendientes',
+                  onPressed: () => _returnToPending(ride),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -682,20 +704,374 @@ class _BookingsAssignedScreenState extends State<BookingsAssignedScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.blue.shade100,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Text(
-              ride['status']?.toString().toUpperCase() ?? 'ASSIGNED',
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blue),
-            ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade100,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  ride['status']?.toString().toUpperCase() ?? 'ASSIGNED',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue,
+                  ),
+                ),
+              ),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.edit, size: 18),
+                color: Colors.blue,
+                tooltip: 'Cambiar conductor',
+                onPressed: () => _showChangeDriverDialog(ride),
+              ),
+              IconButton(
+                icon: const Icon(Icons.undo, size: 18),
+                color: Colors.orange,
+                tooltip: 'Regresar a pendientes',
+                onPressed: () => _returnToPending(ride),
+              ),
+            ],
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _showChangeDriverDialog(Map<String, dynamic> ride) async {
+    try {
+      final supabaseClient = _supabaseService.client;
+      final rideId = ride['id']?.toString() ?? '';
+      final currentDriverId = ride['driver_id']?.toString();
+
+      // Cargar lista de drivers disponibles
+      final driversResponse = await supabaseClient
+          .from('drivers')
+          .select('id, user:users!drivers_user_id_fkey(id, display_name, email, phone_number)')
+          .eq('status', 'active');
+
+      final drivers = (driversResponse as List).cast<Map<String, dynamic>>();
+
+      if (drivers.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No hay conductores disponibles'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
+
+      if (!mounted) return;
+
+      await showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (context) {
+          String? selectedDriverId = currentDriverId;
+
+          return StatefulBuilder(
+            builder: (dialogContext, setDialogState) {
+              return Dialog(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 56,
+                            height: 56,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF1D4ED8), Color(0xFF3B82F6)],
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: const Icon(Icons.swap_horiz, color: Colors.white, size: 28),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Cambiar Conductor',
+                                  style: GoogleFonts.exo(fontSize: 24, fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Selecciona un nuevo conductor para este viaje',
+                                  style: GoogleFonts.exo(fontSize: 14, color: Colors.grey.shade600),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      Flexible(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: ListView.separated(
+                            shrinkWrap: true,
+                            itemCount: drivers.length,
+                            separatorBuilder: (context, index) => Divider(
+                              height: 1,
+                              color: Colors.grey.shade200,
+                              indent: 16,
+                              endIndent: 16,
+                            ),
+                            itemBuilder: (context, index) {
+                              final driver = drivers[index];
+                              final driverUser = driver['user'] as Map<String, dynamic>?;
+                              final driverName =
+                                  driverUser?['display_name'] ??
+                                  driverUser?['email'] ??
+                                  'Sin nombre';
+                              final driverEmail = driverUser?['email'] ?? '';
+                              final driverId = driver['id'] as String;
+                              final isSelected = selectedDriverId == driverId;
+
+                              return InkWell(
+                                onTap: () {
+                                  setDialogState(() {
+                                    selectedDriverId = driverId;
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? const Color(0xFF1D4ED8).withValues(alpha: 0.1)
+                                        : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 40,
+                                        height: 40,
+                                        decoration: BoxDecoration(
+                                          gradient: isSelected
+                                              ? const LinearGradient(
+                                                  colors: [Color(0xFF1D4ED8), Color(0xFF3B82F6)],
+                                                )
+                                              : null,
+                                          color: isSelected ? null : Colors.grey.shade300,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: isSelected
+                                            ? const Icon(Icons.check, color: Colors.white, size: 20)
+                                            : Icon(
+                                                Icons.person,
+                                                color: Colors.grey.shade600,
+                                                size: 20,
+                                              ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              driverName.toString(),
+                                              style: GoogleFonts.exo(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w600,
+                                                color: isSelected
+                                                    ? const Color(0xFF1D4ED8)
+                                                    : const Color(0xFF1A202C),
+                                              ),
+                                            ),
+                                            if (driverEmail.isNotEmpty) ...[
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                driverEmail,
+                                                style: GoogleFonts.exo(
+                                                  fontSize: 12,
+                                                  color: Colors.grey.shade600,
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.of(dialogContext).pop(),
+                            child: Text('Cancelar', style: GoogleFonts.exo()),
+                          ),
+                          const SizedBox(width: 12),
+                          ElevatedButton(
+                            onPressed:
+                                selectedDriverId != null && selectedDriverId != currentDriverId
+                                ? () async {
+                                    Navigator.of(dialogContext).pop();
+                                    await _changeDriver(rideId, selectedDriverId!);
+                                  }
+                                : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF1D4ED8),
+                              foregroundColor: Colors.white,
+                            ),
+                            child: Text('Cambiar', style: GoogleFonts.exo()),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  Future<void> _changeDriver(String rideId, String newDriverId) async {
+    try {
+      final supabaseClient = _supabaseService.client;
+
+      // Actualizar el viaje con el nuevo driver
+      await supabaseClient
+          .from('ride_requests')
+          .update({
+            'driver_id': newDriverId,
+            'status': 'requested', // Mantener en requested para que el nuevo driver lo acepte
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', rideId);
+
+      // Crear notificación para el nuevo driver
+      final ride = await supabaseClient
+          .from('ride_requests')
+          .select('origin, destination')
+          .eq('id', rideId)
+          .maybeSingle();
+
+      if (ride != null) {
+        final origin = (ride['origin'] as Map?)?['address']?.toString() ?? 'Origen';
+        final destination = (ride['destination'] as Map?)?['address']?.toString() ?? 'Destino';
+
+        await supabaseClient.from('messages').insert({
+          'type': 'ride_request',
+          'title': '🚗 Nuevo viaje asignado',
+          'message':
+              'Tienes un nuevo viaje asignado: $origin → $destination. Revisa los detalles y acepta o rechaza.',
+          'data': {'ride_id': rideId, 'action': 'driver_accept_reject'},
+          'driver_id': newDriverId,
+          'is_read': false,
+        });
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Conductor cambiado exitosamente'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        _loadAssignedRides();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al cambiar conductor: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _returnToPending(Map<String, dynamic> ride) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('¿Regresar a pendientes?', style: GoogleFonts.exo()),
+        content: Text(
+          '¿Estás seguro de que deseas regresar este viaje a pendientes? Se quitará la asignación del conductor.',
+          style: GoogleFonts.exo(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text('Cancelar', style: GoogleFonts.exo()),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.orange),
+            child: Text('Regresar', style: GoogleFonts.exo(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      final supabaseClient = _supabaseService.client;
+      final rideId = ride['id']?.toString() ?? '';
+
+      // Quitar driver_id y mantener status='requested'
+      await supabaseClient
+          .from('ride_requests')
+          .update({
+            'driver_id': null,
+            'status': 'requested',
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', rideId);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Viaje regresado a pendientes'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        _loadAssignedRides();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   Widget _buildBottomActions() {

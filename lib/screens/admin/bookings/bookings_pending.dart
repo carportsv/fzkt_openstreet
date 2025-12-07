@@ -20,13 +20,52 @@ class _BookingsPendingScreenState extends State<BookingsPendingScreen> {
   String? _selectedDriver;
 
   List<Map<String, dynamic>> _rides = [];
+  List<Map<String, dynamic>> _customers = [];
+  List<Map<String, dynamic>> _drivers = [];
   bool _isLoading = true;
+  bool _isLoadingFilters = true;
   String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
+    _loadFilters();
     _loadPendingRides();
+  }
+
+  Future<void> _loadFilters() async {
+    try {
+      final supabaseClient = _supabaseService.client;
+
+      // Cargar customers (users)
+      final customersResponse = await supabaseClient
+          .from('users')
+          .select('id, email, display_name')
+          .order('display_name')
+          .limit(100);
+
+      // Cargar drivers
+      final driversResponse = await supabaseClient
+          .from('drivers')
+          .select('id, user:users!drivers_user_id_fkey(id, email, display_name)')
+          .eq('status', 'active')
+          .limit(100);
+
+      if (mounted) {
+        setState(() {
+          _customers = (customersResponse as List).cast<Map<String, dynamic>>();
+          _drivers = (driversResponse as List).cast<Map<String, dynamic>>();
+          _isLoadingFilters = false;
+        });
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error cargando filtros: $e');
+      }
+      if (mounted) {
+        setState(() => _isLoadingFilters = false);
+      }
+    }
   }
 
   Future<void> _loadPendingRides() async {
@@ -39,7 +78,7 @@ class _BookingsPendingScreenState extends State<BookingsPendingScreen> {
       final supabaseClient = _supabaseService.client;
 
       // Cargar viajes con status 'requested' y sin driver asignado
-      final queryBuilder = supabaseClient
+      var queryBuilder = supabaseClient
           .from('ride_requests')
           .select('''
             *,
@@ -48,23 +87,24 @@ class _BookingsPendingScreenState extends State<BookingsPendingScreen> {
           .eq('status', 'requested')
           .isFilter('driver_id', null);
 
+      // Aplicar filtro de customer si existe
+      if (_selectedCustomer != null) {
+        queryBuilder = queryBuilder.eq('user_id', _selectedCustomer!);
+      }
+
+      // Aplicar filtro de driver si existe (aunque en pending no debería haber drivers, por si acaso)
+      if (_selectedDriver != null) {
+        queryBuilder = queryBuilder.eq('driver_id', _selectedDriver!);
+      }
+
       // Aplicar filtros de fecha si existen
       if (_selectedDate != null) {
         final date = DateTime.parse(_selectedDate!);
         final startOfDay = DateTime(date.year, date.month, date.day);
         final endOfDay = startOfDay.add(const Duration(days: 1));
-        final response = await queryBuilder
+        queryBuilder = queryBuilder
             .gte('created_at', startOfDay.toIso8601String())
-            .lt('created_at', endOfDay.toIso8601String())
-            .order('created_at', ascending: false);
-
-        if (mounted) {
-          setState(() {
-            _rides = List<Map<String, dynamic>>.from(response);
-            _isLoading = false;
-          });
-        }
-        return;
+            .lt('created_at', endOfDay.toIso8601String());
       }
 
       // Ordenar por fecha de creación
@@ -200,7 +240,10 @@ class _BookingsPendingScreenState extends State<BookingsPendingScreen> {
               )
               .toList(),
           onChanged: (newValue) {
-            setState(() => _recordsPerPage = newValue!);
+            setState(() {
+              _recordsPerPage = newValue!;
+              // No necesita recargar, solo actualiza la vista
+            });
           },
         ),
       ),
@@ -244,6 +287,22 @@ class _BookingsPendingScreenState extends State<BookingsPendingScreen> {
   }
 
   Widget _buildCustomerFilter() {
+    final items = <DropdownMenuItem<String>>[
+      const DropdownMenuItem<String>(value: null, child: Text('All Customers')),
+    ];
+
+    for (var customer in _customers) {
+      final customerId = customer['id']?.toString() ?? '';
+      final displayName =
+          customer['display_name']?.toString() ?? customer['email']?.toString() ?? 'Sin nombre';
+      items.add(
+        DropdownMenuItem<String>(
+          value: customerId,
+          child: Text(displayName, overflow: TextOverflow.ellipsis),
+        ),
+      );
+    }
+
     return Material(
       elevation: 0,
       color: Colors.transparent,
@@ -253,21 +312,50 @@ class _BookingsPendingScreenState extends State<BookingsPendingScreen> {
           border: Border.all(color: Colors.grey.shade300),
           borderRadius: BorderRadius.circular(8.0),
         ),
-        child: DropdownButton<String>(
-          value: _selectedCustomer,
-          underline: const SizedBox(),
-          isExpanded: true,
-          hint: const Text('All Customers'),
-          items: [const DropdownMenuItem<String>(value: null, child: Text('All Customers'))],
-          onChanged: (newValue) {
-            setState(() => _selectedCustomer = newValue);
-          },
-        ),
+        child: _isLoadingFilters
+            ? const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12.0),
+                child: SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              )
+            : DropdownButton<String>(
+                value: _selectedCustomer,
+                underline: const SizedBox(),
+                isExpanded: true,
+                hint: const Text('All Customers'),
+                items: items,
+                onChanged: (newValue) {
+                  setState(() {
+                    _selectedCustomer = newValue;
+                    _loadPendingRides();
+                  });
+                },
+              ),
       ),
     );
   }
 
   Widget _buildDriverFilter() {
+    final items = <DropdownMenuItem<String>>[
+      const DropdownMenuItem<String>(value: null, child: Text('All Drivers')),
+    ];
+
+    for (var driver in _drivers) {
+      final driverId = driver['id']?.toString() ?? '';
+      final user = driver['user'] as Map<String, dynamic>?;
+      final displayName =
+          user?['display_name']?.toString() ?? user?['email']?.toString() ?? 'Sin nombre';
+      items.add(
+        DropdownMenuItem<String>(
+          value: driverId,
+          child: Text(displayName, overflow: TextOverflow.ellipsis),
+        ),
+      );
+    }
+
     return Material(
       elevation: 0,
       color: Colors.transparent,
@@ -277,16 +365,28 @@ class _BookingsPendingScreenState extends State<BookingsPendingScreen> {
           border: Border.all(color: Colors.grey.shade300),
           borderRadius: BorderRadius.circular(8.0),
         ),
-        child: DropdownButton<String>(
-          value: _selectedDriver,
-          underline: const SizedBox(),
-          isExpanded: true,
-          hint: const Text('All Drivers'),
-          items: [const DropdownMenuItem<String>(value: null, child: Text('All Drivers'))],
-          onChanged: (newValue) {
-            setState(() => _selectedDriver = newValue);
-          },
-        ),
+        child: _isLoadingFilters
+            ? const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12.0),
+                child: SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              )
+            : DropdownButton<String>(
+                value: _selectedDriver,
+                underline: const SizedBox(),
+                isExpanded: true,
+                hint: const Text('All Drivers'),
+                items: items,
+                onChanged: (newValue) {
+                  setState(() {
+                    _selectedDriver = newValue;
+                    _loadPendingRides();
+                  });
+                },
+              ),
       ),
     );
   }
@@ -374,96 +474,196 @@ class _BookingsPendingScreenState extends State<BookingsPendingScreen> {
         ? DateTime.parse(ride['created_at'])
         : DateTime.now();
     final formattedDate = DateFormat('MM/dd/yyyy HH:mm').format(createdAt);
+    final origin = (ride['origin'] as Map?)?['address']?.toString() ?? 'N/A';
+    final destination = (ride['destination'] as Map?)?['address']?.toString() ?? 'N/A';
+    final price = ride['price'] ?? 0.0;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: () => _showBookingDetailsModal(ride),
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              // Avatar o icono
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF1D4ED8), Color(0xFF3B82F6)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+        border: Border.all(color: Colors.grey.shade200, width: 1),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _showBookingDetailsModal(ride),
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Avatar con gradiente profesional
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF1D4ED8), Color(0xFF3B82F6)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF1D4ED8).withValues(alpha: 0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
-                  borderRadius: BorderRadius.circular(12),
+                  child: const Icon(Icons.person, color: Colors.white, size: 32),
                 ),
-                child: const Icon(Icons.person, color: Colors.white, size: 28),
-              ),
-              const SizedBox(width: 16),
-              // Información principal
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      userName.toString(),
-                      style: GoogleFonts.exo(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF1A202C),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(Icons.calendar_today, size: 14, color: Colors.grey.shade600),
-                        const SizedBox(width: 4),
-                        Text(
-                          formattedDate,
-                          style: GoogleFonts.exo(fontSize: 14, color: Colors.grey.shade600),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              // Botón de asignar
-              ride['driver_id'] == null
-                  ? ElevatedButton.icon(
-                      onPressed: () => _showAssignDriverDialog(ride),
-                      icon: const Icon(Icons.person_add, size: 18),
-                      label: const Text('Asignar Driver'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orange,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                    )
-                  : Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.green.shade100,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
+                const SizedBox(width: 20),
+                // Información principal
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
                         children: [
-                          Icon(Icons.check_circle, size: 18, color: Colors.green.shade700),
-                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              userName.toString(),
+                              style: GoogleFonts.exo(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF1A202C),
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ),
+                          if (price > 0)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF1D4ED8).withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                '\$${price.toStringAsFixed(2)}',
+                                style: GoogleFonts.exo(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFF1D4ED8),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(Icons.calendar_today, size: 16, color: Colors.grey.shade600),
+                          const SizedBox(width: 6),
                           Text(
-                            'Asignado',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.green.shade700,
+                            formattedDate,
+                            style: GoogleFonts.exo(fontSize: 14, color: Colors.grey.shade600),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(Icons.location_on, size: 16, color: Colors.green.shade600),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              origin,
+                              style: GoogleFonts.exo(fontSize: 13, color: Colors.grey.shade700),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
                       ),
-                    ),
-            ],
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(Icons.location_on, size: 16, color: Colors.red.shade600),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              destination,
+                              style: GoogleFonts.exo(fontSize: 13, color: Colors.grey.shade700),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // Botón de asignar mejorado
+                ride['driver_id'] == null
+                    ? Container(
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.orange.withValues(alpha: 0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: ElevatedButton.icon(
+                          onPressed: () => _showAssignDriverDialog(ride),
+                          icon: const Icon(Icons.person_add, size: 20),
+                          label: Text(
+                            'Asignar Driver',
+                            style: GoogleFonts.exo(fontWeight: FontWeight.w600, fontSize: 14),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                      )
+                    : Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.green.shade200),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.check_circle, size: 18, color: Colors.green.shade700),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Asignado',
+                              style: GoogleFonts.exo(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.green.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+              ],
+            ),
           ),
         ),
       ),

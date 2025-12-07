@@ -21,8 +21,13 @@ class _DriverRequestsScreenState extends State<DriverRequestsScreen> {
   Map<String, dynamic>? _selectedRequest;
   bool _showModal = false;
   bool _accepting = false;
+  bool _rejecting = false;
   Timer? _refreshTimer;
   RealtimeChannel? _realtimeChannel;
+  DateTime? _lastRefreshTime;
+  static const Duration _minRefreshInterval = Duration(
+    seconds: 5,
+  ); // Mínimo 5 segundos entre actualizaciones
 
   @override
   void initState() {
@@ -66,7 +71,7 @@ class _DriverRequestsScreenState extends State<DriverRequestsScreen> {
             final driverId = driverResponse['id'] as String?;
             if (driverId != null) {
               setState(() => _driverId = driverId);
-              _loadRequests();
+              _loadRequests(force: true); // Carga inicial, forzar
               _setupRealtimeSubscription();
               _startAutoRefresh();
             }
@@ -80,25 +85,111 @@ class _DriverRequestsScreenState extends State<DriverRequestsScreen> {
     }
   }
 
-  Future<void> _loadRequests() async {
-    if (_driverId == null) return;
+  Future<void> _loadRequests({bool force = false}) async {
+    if (_driverId == null) {
+      if (kDebugMode) {
+        debugPrint('[DriverRequests] ⚠️ _driverId es null, no se pueden cargar solicitudes');
+      }
+      return;
+    }
 
+    // Control de frecuencia: evitar actualizaciones muy frecuentes (excepto si es forzada)
+    if (!force && _lastRefreshTime != null) {
+      final timeSinceLastRefresh = DateTime.now().difference(_lastRefreshTime!);
+      if (timeSinceLastRefresh < _minRefreshInterval) {
+        if (kDebugMode) {
+          debugPrint(
+            '[DriverRequests] ⏰ Actualización omitida (muy reciente: ${timeSinceLastRefresh.inSeconds}s)',
+          );
+        }
+        return;
+      }
+    }
+
+    _lastRefreshTime = DateTime.now();
     setState(() => _isLoading = true);
 
     try {
       final supabaseClient = _supabaseService.client;
 
-      // Cargar solicitudes disponibles (status='requested' y driver_id=null)
+      if (kDebugMode) {
+        debugPrint('[DriverRequests] 🔍 Cargando solicitudes para driver: $_driverId');
+        debugPrint('[DriverRequests] 🔍 Tipo de _driverId: ${_driverId.runtimeType}');
+      }
+
+      // DEBUG: Verificar cuántos viajes hay en total para este driver
+      try {
+        final totalCount = await supabaseClient
+            .from('ride_requests')
+            .select('id')
+            .eq('driver_id', _driverId!);
+
+        if (kDebugMode) {
+          debugPrint(
+            '[DriverRequests] 📊 Total de viajes con driver_id=$_driverId: ${(totalCount as List).length}',
+          );
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('[DriverRequests] ⚠️ Error contando viajes: $e');
+        }
+      }
+
+      // DEBUG: Verificar viajes por status
+      try {
+        final byStatus = await supabaseClient
+            .from('ride_requests')
+            .select('status')
+            .eq('driver_id', _driverId!);
+
+        if (kDebugMode) {
+          final statusMap = <String, int>{};
+          for (var ride in (byStatus as List)) {
+            final status = (ride as Map<String, dynamic>)['status']?.toString() ?? 'null';
+            statusMap[status] = (statusMap[status] ?? 0) + 1;
+          }
+          debugPrint('[DriverRequests] 📊 Viajes por status: $statusMap');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('[DriverRequests] ⚠️ Error verificando status: $e');
+        }
+      }
+
+      // Cargar viajes asignados a este driver
+      // Incluir 'requested' (asignados pero no aceptados) y 'accepted' (aceptados pero no completados)
+      // Usar .or() para filtrar múltiples estados
       final requests = await supabaseClient
           .from('ride_requests')
           .select('''
             *,
             user:users!ride_requests_user_id_fkey(id, email, display_name, phone_number)
           ''')
-          .eq('status', 'requested')
-          .isFilter('driver_id', null)
+          .eq('driver_id', _driverId!) // Viajes asignados a este driver
+          .or('status.eq.requested,status.eq.accepted') // Incluir ambos estados
           .order('created_at', ascending: false)
-          .limit(20);
+          .limit(50); // Aumentar límite para ver más viajes
+
+      if (kDebugMode) {
+        debugPrint('[DriverRequests] ✅ Solicitudes encontradas: ${(requests as List).length}');
+        if ((requests as List).isEmpty) {
+          debugPrint('[DriverRequests] ⚠️ No se encontraron viajes.');
+          debugPrint('[DriverRequests] 💡 Posibles causas:');
+          debugPrint('[DriverRequests]   1. Los viajes no tienen driver_id asignado');
+          debugPrint(
+            '[DriverRequests]   2. Los viajes tienen un status diferente a "requested" o "accepted"',
+          );
+          debugPrint('[DriverRequests]   3. El driver_id en la BD no coincide con $_driverId');
+        } else {
+          // Mostrar detalles de los primeros 3 viajes
+          for (var i = 0; i < (requests as List).length && i < 3; i++) {
+            final ride = (requests as List)[i] as Map<String, dynamic>;
+            debugPrint(
+              '[DriverRequests] 📋 Viaje ${i + 1}: id=${ride['id']}, status=${ride['status']}, driver_id=${ride['driver_id']}',
+            );
+          }
+        }
+      }
 
       if (mounted) {
         setState(() {
@@ -106,9 +197,10 @@ class _DriverRequestsScreenState extends State<DriverRequestsScreen> {
           _isLoading = false;
         });
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       if (kDebugMode) {
-        debugPrint('[DriverRequests] Error cargando solicitudes: $e');
+        debugPrint('[DriverRequests] ❌ Error cargando solicitudes: $e');
+        debugPrint('[DriverRequests] Stack trace: $stackTrace');
       }
       if (mounted) {
         setState(() => _isLoading = false);
@@ -117,25 +209,32 @@ class _DriverRequestsScreenState extends State<DriverRequestsScreen> {
   }
 
   void _setupRealtimeSubscription() {
+    if (_driverId == null) return;
+
     try {
       final supabaseClient = _supabaseService.client;
 
+      if (kDebugMode) {
+        debugPrint('[DriverRequests] 🔌 Configurando suscripción para driver: $_driverId');
+      }
+
       _realtimeChannel = supabaseClient
-          .channel('driver-requests')
+          .channel('driver-requests-$_driverId')
           .onPostgresChanges(
             event: PostgresChangeEvent.all,
             schema: 'public',
             table: 'ride_requests',
             filter: PostgresChangeFilter(
               type: PostgresChangeFilterType.eq,
-              column: 'status',
-              value: 'requested',
+              column: 'driver_id',
+              value: _driverId!,
             ),
             callback: (payload) {
               if (kDebugMode) {
                 debugPrint('[DriverRequests] 🔔 Cambio detectado: ${payload.eventType}');
               }
-              _loadRequests();
+              // Usar force=true para que Realtime siempre actualice, pero con el control de frecuencia
+              _loadRequests(force: true);
             },
           )
           .subscribe();
@@ -151,8 +250,12 @@ class _DriverRequestsScreenState extends State<DriverRequestsScreen> {
   }
 
   void _startAutoRefresh() {
-    _refreshTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
-      _loadRequests();
+    // Actualización automática cada 2 minutos (120 segundos)
+    // Ya casi no es necesaria si las notificaciones Realtime funcionan correctamente
+    _refreshTimer = Timer.periodic(const Duration(minutes: 2), (timer) {
+      if (mounted) {
+        _loadRequests(force: true); // Forzar actualización periódica
+      }
     });
   }
 
@@ -179,7 +282,7 @@ class _DriverRequestsScreenState extends State<DriverRequestsScreen> {
       final supabaseClient = _supabaseService.client;
       final rideId = _selectedRequest!['id']?.toString() ?? '';
 
-      // Verificar que el viaje aún esté disponible
+      // Verificar que el viaje esté asignado a este driver
       final checkResponse = await supabaseClient
           .from('ride_requests')
           .select('status, driver_id')
@@ -194,19 +297,17 @@ class _DriverRequestsScreenState extends State<DriverRequestsScreen> {
         throw Exception('El viaje ya no está disponible');
       }
 
-      if (checkResponse['driver_id'] != null) {
-        throw Exception('El viaje ya fue aceptado por otro conductor');
+      final checkDriverId = checkResponse['driver_id']?.toString();
+      if (checkDriverId != _driverId) {
+        throw Exception('Este viaje no está asignado a ti');
       }
 
-      // Aceptar el viaje
+      // Aceptar el viaje (ya tiene driver_id, solo cambiamos status)
       await supabaseClient
           .from('ride_requests')
-          .update({
-            'driver_id': _driverId,
-            'status': 'accepted',
-            'updated_at': DateTime.now().toIso8601String(),
-          })
-          .eq('id', rideId);
+          .update({'status': 'accepted', 'updated_at': DateTime.now().toIso8601String()})
+          .eq('id', rideId)
+          .eq('driver_id', _driverId!); // Asegurar que solo este driver puede aceptar
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -218,7 +319,7 @@ class _DriverRequestsScreenState extends State<DriverRequestsScreen> {
           ),
         );
         _closeModal();
-        _loadRequests();
+        _loadRequests(force: true); // Después de aceptar, forzar actualización
       }
     } catch (e) {
       if (mounted) {
@@ -234,6 +335,111 @@ class _DriverRequestsScreenState extends State<DriverRequestsScreen> {
     } finally {
       if (mounted) {
         setState(() => _accepting = false);
+      }
+    }
+  }
+
+  Future<void> _rejectRequest() async {
+    if (_selectedRequest == null || _driverId == null) return;
+
+    // Confirmar rechazo
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('¿Rechazar viaje?', style: GoogleFonts.exo()),
+        content: Text(
+          '¿Estás seguro de que deseas rechazar este viaje? El viaje volverá a estar disponible para otros conductores.',
+          style: GoogleFonts.exo(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text('Cancelar', style: GoogleFonts.exo()),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: Text('Rechazar', style: GoogleFonts.exo(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() => _rejecting = true);
+
+    try {
+      final supabaseClient = _supabaseService.client;
+      final rideId = _selectedRequest!['id']?.toString() ?? '';
+
+      // Verificar que el viaje esté asignado a este driver
+      final checkResponse = await supabaseClient
+          .from('ride_requests')
+          .select('status, driver_id')
+          .eq('id', rideId)
+          .maybeSingle();
+
+      if (checkResponse == null) {
+        throw Exception('El viaje no existe');
+      }
+
+      final checkDriverId = checkResponse['driver_id']?.toString();
+      if (checkDriverId != _driverId) {
+        throw Exception('Este viaje no está asignado a ti');
+      }
+
+      // Rechazar: quitar driver_id y mantener status='requested' para que vuelva a estar disponible
+      await supabaseClient
+          .from('ride_requests')
+          .update({
+            'driver_id': null,
+            'status': 'requested',
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', rideId)
+          .eq('driver_id', _driverId!); // Asegurar que solo este driver puede rechazar
+
+      // Eliminar la notificación relacionada
+      try {
+        await supabaseClient
+            .from('messages')
+            .update({'is_read': true})
+            .eq('driver_id', _driverId!)
+            .eq('type', 'ride_request')
+            .contains('data', {'ride_id': rideId});
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('[DriverRequests] Error marcando notificación como leída: $e');
+        }
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Viaje rechazado', style: GoogleFonts.exo()),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+        _closeModal();
+        _loadRequests(force: true); // Después de aceptar, forzar actualización
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al rechazar viaje: ${e.toString()}', style: GoogleFonts.exo()),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _rejecting = false);
       }
     }
   }
@@ -263,7 +469,7 @@ class _DriverRequestsScreenState extends State<DriverRequestsScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _loadRequests,
+            onPressed: () => _loadRequests(force: true),
             tooltip: 'Actualizar',
           ),
         ],
@@ -290,7 +496,7 @@ class _DriverRequestsScreenState extends State<DriverRequestsScreen> {
               ),
             )
           : RefreshIndicator(
-              onRefresh: _loadRequests,
+              onRefresh: () => _loadRequests(force: true),
               child: ListView.builder(
                 padding: const EdgeInsets.all(16),
                 itemCount: _requests.length,
@@ -418,7 +624,7 @@ class _DriverRequestsScreenState extends State<DriverRequestsScreen> {
               ),
             ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _loadRequests,
+        onPressed: () => _loadRequests(force: true),
         backgroundColor: Colors.teal[700],
         child: const Icon(Icons.refresh),
       ),
@@ -516,22 +722,51 @@ class _DriverRequestsScreenState extends State<DriverRequestsScreen> {
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: _accepting ? null : _closeModal,
+                  onPressed: (_accepting || _rejecting) ? null : _closeModal,
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   child: Text(
-                    'Cancelar',
+                    'Cerrar',
                     style: GoogleFonts.exo(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
+                child: OutlinedButton(
+                  onPressed: (_accepting || _rejecting) ? null : _rejectRequest,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red,
+                    side: const BorderSide(color: Colors.red),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: _rejecting
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                          ),
+                        )
+                      : Text(
+                          'Rechazar',
+                          style: GoogleFonts.exo(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.red,
+                          ),
+                        ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
                 flex: 2,
                 child: ElevatedButton(
-                  onPressed: _accepting ? null : _acceptRequest,
+                  onPressed: (_accepting || _rejecting) ? null : _acceptRequest,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.teal[700],
                     padding: const EdgeInsets.symmetric(vertical: 16),
