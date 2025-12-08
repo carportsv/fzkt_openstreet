@@ -233,7 +233,11 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       final webClientId =
           dotenv.env['EXPO_PUBLIC_GOOGLE_CLIENT_ID'] ??
           dotenv.env['EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID'];
+      final androidClientId = dotenv.env['EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID'];
       debugPrint('[LoginScreen] webClientId: ${webClientId != null ? "✅ configurado" : "❌ null"}');
+      debugPrint(
+        '[LoginScreen] androidClientId: ${androidClientId != null ? "✅ configurado" : "❌ null"}',
+      );
 
       UserCredential userCredential;
 
@@ -360,8 +364,26 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         }
       } else {
         // Para móvil, usar google_sign_in
+        // En Android, cuando el SHA-1 está registrado, normalmente no se necesita clientId
+        // Pero si oauth_client está vacío en google-services.json, puede ser necesario
+        debugPrint('[LoginScreen] Configurando GoogleSignIn para móvil (Android/iOS)...');
+        debugPrint(
+          '[LoginScreen] androidClientId: ${androidClientId != null ? "✅ configurado" : "❌ null (usando null - configuración automática)"}',
+        );
+
+        // En Android, usar serverClientId (webClientId) para obtener idToken
+        // serverClientId es el Client ID de la aplicación web, necesario para obtener idToken en Android
+        // Esto es diferente de clientId, que es específico para iOS
+        debugPrint('[LoginScreen] Configurando GoogleSignIn para Android con serverClientId...');
+        debugPrint(
+          '[LoginScreen] serverClientId (webClientId): ${webClientId != null ? "✅ configurado" : "❌ null"}',
+        );
+
+        // En Android, usar serverClientId en lugar de clientId
+        // serverClientId debe ser el OAuth Client ID de tipo "Web application"
         final GoogleSignIn googleSignIn = GoogleSignIn(
-          clientId: null,
+          serverClientId:
+              webClientId, // serverClientId es necesario en Android para obtener idToken
           scopes: ['email', 'profile'],
         );
 
@@ -391,10 +413,28 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
         debugPrint('[LoginScreen] ✅ Usuario seleccionado: ${googleUser.email}');
         debugPrint('[LoginScreen] Obteniendo tokens de autenticación...');
-        final googleAuth = await googleUser.authentication;
+        var googleAuth = await googleUser.authentication;
+
+        // Log detallado de los tokens obtenidos
+        debugPrint(
+          '[LoginScreen] accessToken: ${googleAuth.accessToken != null ? "✅ Disponible (${googleAuth.accessToken!.substring(0, 20)}...)" : "❌ null"}',
+        );
+        debugPrint(
+          '[LoginScreen] idToken: ${googleAuth.idToken != null ? "✅ Disponible (${googleAuth.idToken!.substring(0, 20)}...)" : "❌ null"}',
+        );
 
         if (googleAuth.accessToken == null || googleAuth.idToken == null) {
-          throw Exception('No se pudieron obtener los tokens de autenticación');
+          final errorMsg =
+              'No se pudieron obtener los tokens de autenticación.\n'
+              'accessToken: ${googleAuth.accessToken != null ? "✅" : "❌ null"}\n'
+              'idToken: ${googleAuth.idToken != null ? "✅" : "❌ null"}\n\n'
+              'Verifica que:\n'
+              '1. El serverClientId (webClientId) esté configurado correctamente\n'
+              '2. El OAuth Client ID de tipo "Web application" esté habilitado en Google Cloud Console\n'
+              '3. El SHA-1 esté registrado en Firebase Console\n'
+              '4. El package name sea correcto: com.consultancy.app';
+          debugPrint('[LoginScreen] ❌ ERROR: $errorMsg');
+          throw Exception(errorMsg);
         }
 
         debugPrint('[LoginScreen] ✅ Tokens obtenidos, creando credencial...');
