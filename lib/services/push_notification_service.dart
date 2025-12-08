@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../auth/supabase_service.dart';
+import '../auth/firebase_options.dart';
 import 'package:flutter/services.dart';
 
 /// Servicio para manejar notificaciones push del sistema
@@ -387,10 +389,116 @@ class PushNotificationService {
 }
 
 /// Handler para mensajes en segundo plano (debe ser top-level)
+/// IMPORTANTE: Este handler se ejecuta en un isolate separado cuando la app está en segundo plano
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // Inicializar Firebase en el isolate de segundo plano con las opciones correctas
+  // Verificar si Firebase ya está inicializado (puede estar inicializado en algunos casos)
+  if (Firebase.apps.isEmpty) {
+    await Firebase.initializeApp(options: await DefaultFirebaseOptions.currentPlatform);
+  }
+
   if (kDebugMode) {
     debugPrint('[PushNotificationService] 📨 Mensaje en segundo plano: ${message.messageId}');
+    debugPrint('[PushNotificationService] 📨 Título: ${message.notification?.title}');
+    debugPrint('[PushNotificationService] 📨 Cuerpo: ${message.notification?.body}');
+    debugPrint('[PushNotificationService] 📨 Data: ${message.data}');
   }
-  // Aquí puedes procesar el mensaje en segundo plano
+
+  // Inicializar notificaciones locales en el isolate de segundo plano
+  final FlutterLocalNotificationsPlugin localNotifications = FlutterLocalNotificationsPlugin();
+
+  const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+  const iosSettings = DarwinInitializationSettings(
+    requestAlertPermission: true,
+    requestBadgePermission: true,
+    requestSoundPermission: true,
+  );
+  const initSettings = InitializationSettings(android: androidSettings, iOS: iosSettings);
+
+  await localNotifications.initialize(initSettings);
+
+  // Crear canal de notificaciones para Android
+  const androidChannel = AndroidNotificationChannel(
+    'ride_notifications',
+    'Notificaciones de Viajes',
+    description: 'Notificaciones sobre nuevos viajes asignados',
+    importance: Importance.high,
+    playSound: true,
+    enableVibration: true,
+  );
+
+  await localNotifications
+      .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+      ?.createNotificationChannel(androidChannel);
+
+  // Mostrar notificación local
+  final notification = message.notification;
+  if (notification != null) {
+    const androidDetails = AndroidNotificationDetails(
+      'ride_notifications',
+      'Notificaciones de Viajes',
+      channelDescription: 'Notificaciones sobre nuevos viajes asignados',
+      importance: Importance.high,
+      priority: Priority.high,
+      showWhen: true,
+      playSound: true,
+      enableVibration: true,
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+
+    const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
+
+    await localNotifications.show(
+      message.hashCode,
+      notification.title ?? 'Nueva notificación',
+      notification.body ?? 'Tienes una nueva notificación',
+      details,
+      payload: message.data.toString(),
+    );
+
+    if (kDebugMode) {
+      debugPrint('[PushNotificationService] ✅ Notificación mostrada en segundo plano');
+    }
+  } else if (message.data.isNotEmpty) {
+    // Si no hay notification pero hay data, mostrar notificación con los datos
+    const androidDetails = AndroidNotificationDetails(
+      'ride_notifications',
+      'Notificaciones de Viajes',
+      channelDescription: 'Notificaciones sobre nuevos viajes asignados',
+      importance: Importance.high,
+      priority: Priority.high,
+      showWhen: true,
+      playSound: true,
+      enableVibration: true,
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+
+    const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
+
+    final title = message.data['title'] ?? 'Nueva notificación';
+    final body = message.data['body'] ?? message.data['message'] ?? 'Tienes una nueva notificación';
+
+    await localNotifications.show(
+      message.hashCode,
+      title.toString(),
+      body.toString(),
+      details,
+      payload: message.data.toString(),
+    );
+
+    if (kDebugMode) {
+      debugPrint('[PushNotificationService] ✅ Notificación mostrada en segundo plano (desde data)');
+    }
+  }
 }

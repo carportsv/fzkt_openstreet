@@ -1,7 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- PERMISO DE INTERNET AÑADIDO -->
+    <!-- PERMISOS -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Permisos para notificaciones en segundo plano -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <!-- Permisos para Android 13+ (API 33+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:label="Eugenias Travel"
