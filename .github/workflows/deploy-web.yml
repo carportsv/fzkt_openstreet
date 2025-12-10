@@ -45,11 +45,10 @@ jobs:
           echo "EXPO_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}" >> env
 
       - name: Build web
-        run: flutter build web --release --base-href "/fzkt_openstreet/"
+        run: flutter build web --release --base-href "/eug_consultancy/"
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
-        continue-on-error: true
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
@@ -59,5 +58,4 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-        if: success() || failure()
 
