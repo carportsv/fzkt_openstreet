@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import '../../auth/login_screen.dart';
 import '../../auth/supabase_service.dart';
 import 'package:flutter/foundation.dart';
+import '../welcome/welcome/welcome_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:async';
 import 'driver_requests_screen.dart';
@@ -601,15 +602,27 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
       // 4. Esperar un momento adicional
       await Future.delayed(const Duration(milliseconds: 300));
 
-      // 5. Navegar a la pantalla de login
+      // 5. Navegar a la pantalla apropiada después de logout
       if (mounted) {
-        if (kDebugMode) {
-          debugPrint('[DriverHomeScreen] 🚀 Navegando a LoginScreen...');
+        if (kIsWeb) {
+          // En web, redirigir a WelcomeScreen después de logout
+          if (kDebugMode) {
+            debugPrint('[DriverHomeScreen] 🚀 Navegando a WelcomeScreen (web)...');
+          }
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const WelcomeScreen()),
+            (route) => false,
+          );
+        } else {
+          // En móvil, redirigir a LoginScreen
+          if (kDebugMode) {
+            debugPrint('[DriverHomeScreen] 🚀 Navegando a LoginScreen (móvil)...');
+          }
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const LoginScreen()),
+            (route) => false,
+          );
         }
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
-          (route) => false,
-        );
       }
     } catch (e) {
       if (mounted) {

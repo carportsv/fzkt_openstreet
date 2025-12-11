@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 
 import './login_screen.dart';
 import './routing_screen.dart';
+import '../screens/welcome/welcome/welcome_screen.dart';
 
 /// The definitive, stable AuthGate.
 /// It uses a [StreamBuilder] to listen to Firebase's auth state changes.
@@ -293,9 +294,23 @@ class _AuthGateContentState extends State<_AuthGateContent> {
           return const RoutingScreen();
         }
 
-        // If no user is logged in, show the LoginScreen.
+        // If no user is logged in, en web redirigir a /welcome, en móvil mostrar LoginScreen
         if (kDebugMode) {
-          debugPrint('ℹ️ AuthGate: No user logged in, showing LoginScreen');
+          debugPrint('ℹ️ AuthGate: No user logged in');
+        }
+
+        // En web, después de logout, siempre redirigir a WelcomeScreen
+        // Esto es especialmente importante en GitHub Pages donde el routing puede ser diferente
+        if (kIsWeb) {
+          if (kDebugMode) {
+            debugPrint('[AuthGate] Web - Redirigiendo a WelcomeScreen después de logout');
+          }
+          return const WelcomeScreen();
+        }
+
+        // En móvil, mostrar LoginScreen
+        if (kDebugMode) {
+          debugPrint('ℹ️ AuthGate: Mostrando LoginScreen (móvil)');
         }
         return const LoginScreen();
       },

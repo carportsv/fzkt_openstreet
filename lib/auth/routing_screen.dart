@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 // Import other screens from their correct locations
@@ -58,10 +59,25 @@ class _RoutingScreenState extends State<RoutingScreen> {
       // Actualizar el último usuario procesado a null
       _lastProcessedUserId = null;
       if (mounted) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
-          (route) => false,
-        );
+        // En web, después de logout, redirigir a WelcomeScreen
+        // En móvil, redirigir a LoginScreen
+        if (kIsWeb) {
+          if (kDebugMode) {
+            debugPrint('[RoutingScreen] Web - Usuario null, redirigiendo a WelcomeScreen');
+          }
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const WelcomeScreen()),
+            (route) => false,
+          );
+        } else {
+          if (kDebugMode) {
+            debugPrint('[RoutingScreen] Móvil - Usuario null, redirigiendo a LoginScreen');
+          }
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const LoginScreen()),
+            (route) => false,
+          );
+        }
       }
       return;
     }

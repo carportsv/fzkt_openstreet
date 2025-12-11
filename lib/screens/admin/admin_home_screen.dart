@@ -32,6 +32,7 @@ import 'pricing/vouchers_screen.dart';
 import '../../auth/login_screen.dart';
 import '../../auth/supabase_service.dart';
 import 'package:flutter/foundation.dart';
+import '../welcome/welcome/welcome_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:async';
 
@@ -227,13 +228,23 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       // 4. Esperar un momento adicional para asegurar que todo se limpie
       await Future.delayed(const Duration(milliseconds: 300));
 
-      // 5. Navegar a la pantalla de login y limpiar el stack de navegación
+      // 5. Navegar a la pantalla apropiada después de logout
       if (mounted) {
-        debugPrint('[AdminHomeScreen] 🚀 Navegando a LoginScreen...');
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
-          (route) => false,
-        );
+        if (kIsWeb) {
+          // En web, redirigir a WelcomeScreen después de logout
+          debugPrint('[AdminHomeScreen] 🚀 Navegando a WelcomeScreen (web)...');
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const WelcomeScreen()),
+            (route) => false,
+          );
+        } else {
+          // En móvil, redirigir a LoginScreen
+          debugPrint('[AdminHomeScreen] 🚀 Navegando a LoginScreen (móvil)...');
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const LoginScreen()),
+            (route) => false,
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
