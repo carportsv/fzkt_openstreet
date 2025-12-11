@@ -235,4 +235,40 @@ class RideService {
       rethrow;
     }
   }
+
+  /// Actualizar el estado de pago de un viaje
+  /// Se usa después de confirmar un Payment Intent para guardar el payment_intent_id
+  Future<void> updateRidePaymentStatus({
+    required String rideId,
+    required String paymentIntentId,
+    required String paymentStatus, // 'authorized' o 'paid'
+  }) async {
+    try {
+      if (kDebugMode) {
+        debugPrint('[RideService] 💳 Actualizando estado de pago del viaje: $rideId');
+        debugPrint('[RideService] 📊 Payment Intent ID: $paymentIntentId');
+        debugPrint('[RideService] 📊 Estado: $paymentStatus');
+      }
+
+      final supabaseClient = _supabaseService.client;
+      await supabaseClient
+          .from('ride_requests')
+          .update({
+            'payment_intent_id': paymentIntentId,
+            'payment_status': paymentStatus,
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', rideId);
+
+      if (kDebugMode) {
+        debugPrint('[RideService] ✅ Estado de pago actualizado correctamente');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[RideService] ❌ Error actualizando estado de pago: $e');
+      }
+      // No lanzar excepción - el pago ya fue confirmado, solo falló la actualización de BD
+      // Esto no debería bloquear el flujo del usuario
+    }
+  }
 }

@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "lib": ["deno.window"],
+    "strict": true
+  },
+  "imports": {
+    "stripe": "https://esm.sh/stripe@14.21.0?target=deno",
+    "supabase": "https://esm.sh/@supabase/supabase-js@2"
+  }
+}
+

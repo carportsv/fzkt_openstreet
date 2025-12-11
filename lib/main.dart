@@ -13,6 +13,8 @@ import 'router/route_handler.dart';
 import 'l10n/app_localizations.dart';
 import 'l10n/locale_provider.dart';
 import 'services/push_notification_service.dart';
+import 'services/stripe_config.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -88,6 +90,28 @@ void main() async {
   } else {
     if (kDebugMode) {
       debugPrint('⚠️ Supabase no se inicializará: variables de entorno no disponibles');
+    }
+  }
+
+  // Inicializar Stripe solo si las variables de entorno están cargadas
+  if (envLoaded) {
+    try {
+      final stripePublishableKey = StripeConfig.publishableKey;
+      if (stripePublishableKey.isNotEmpty) {
+        Stripe.publishableKey = stripePublishableKey;
+        if (kDebugMode) {
+          debugPrint('✅ Stripe inicializado con clave pública');
+        }
+      } else {
+        if (kDebugMode) {
+          debugPrint('⚠️ Stripe no se inicializará: clave pública no disponible');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ Error inicializando Stripe: $e');
+      }
+      // Continuar - las operaciones de Stripe manejarán el error
     }
   }
 

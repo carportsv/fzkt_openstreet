@@ -10,6 +10,7 @@ import 'package:qr_flutter/qr_flutter.dart' as qr;
 import '../../../auth/login_screen.dart';
 import '../../../services/ride_service.dart';
 import '../../../services/paypal_service.dart';
+import '../../../services/stripe_service.dart';
 import '../../../l10n/app_localizations.dart';
 import 'receipt_screen.dart';
 import '../../../shared/widgets/whatsapp_floating_button.dart';
@@ -306,12 +307,119 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
         cardName: _selectedPaymentMethod == 'card' ? _cardNameController.text.trim() : '',
       );
 
-      // All: Aquí se integraría con Stripe u otro procesador de pagos
-      // Por ahora, simulamos el procesamiento
-      await Future.delayed(const Duration(seconds: 2));
+      // Procesar pago con Stripe si es tarjeta
+      String? paymentIntentId;
+      if (_selectedPaymentMethod == 'card') {
+        // Validar datos de tarjeta
+        final cardValidation = StripeService.validateCardData(
+          number: _cardNumberController.text.trim(),
+          expMonth: _cardExpiryController.text.split('/').isNotEmpty
+              ? _cardExpiryController.text.split('/')[0].trim()
+              : '',
+          expYear: _cardExpiryController.text.split('/').length > 1
+              ? '20${_cardExpiryController.text.split('/')[1].trim()}'
+              : '',
+          cvc: _cardCvvController.text.trim(),
+        );
 
-      // Crear viaje usando el servicio
-      await _rideService.createRideRequest(rideData);
+        if (!(cardValidation['isValid'] as bool)) {
+          final errors = cardValidation['errors'] as List<dynamic>;
+          setState(() {
+            _isProcessing = false;
+            _paymentError = errors.join(', ');
+          });
+          return;
+        }
+
+        // Crear el viaje primero para obtener el rideId
+        String rideId;
+        try {
+          rideId = await _rideService.createRideRequest(rideData);
+        } catch (e) {
+          setState(() {
+            _isProcessing = false;
+            _paymentError = 'Error al crear el viaje: ${e.toString()}';
+          });
+          return;
+        }
+
+        // Crear Payment Intent (HOLD - autorización)
+        final paymentIntent = await StripeService.createPaymentIntent(
+          rideId: rideId,
+          amount: widget.price,
+          currency: 'usd',
+        );
+
+        if (paymentIntent == null) {
+          setState(() {
+            _isProcessing = false;
+            _paymentError = 'Error al procesar el pago. Verifica tus datos e intenta nuevamente.';
+          });
+          return;
+        }
+
+        // Confirmar Payment Intent usando Payment Sheet (móvil) o confirmPayment (web)
+        // Payment Sheet maneja automáticamente la entrada de datos y 3D Secure en móvil
+        // En web, usamos los datos de tarjeta directamente
+        final confirmationResult = await StripeService.confirmPaymentIntentWithCard(
+          clientSecret: paymentIntent.clientSecret,
+          currency: paymentIntent.currency,
+          cardholderName: _cardNameController.text.trim().isNotEmpty
+              ? _cardNameController.text.trim()
+              : null,
+          // Datos de tarjeta para web (solo se usan si estamos en web)
+          cardNumber: _cardNumberController.text.trim(),
+          expMonth: _cardExpiryController.text.split('/').isNotEmpty
+              ? _cardExpiryController.text.split('/')[0].trim()
+              : null,
+          expYear: _cardExpiryController.text.split('/').length > 1
+              ? '20${_cardExpiryController.text.split('/')[1].trim()}'
+              : null,
+          cvc: _cardCvvController.text.trim(),
+        );
+
+        if (!(confirmationResult['success'] as bool)) {
+          final errorMessage = confirmationResult['error'] as String?;
+          final status = confirmationResult['status'] as String?;
+
+          if (kDebugMode) {
+            debugPrint('[PaymentConfirmationScreen] ❌ Error confirmando pago:');
+            debugPrint('  - Mensaje: $errorMessage');
+            debugPrint('  - Estado: $status');
+          }
+
+          setState(() {
+            _isProcessing = false;
+            _paymentError = errorMessage ?? 'Error al procesar el pago. Intenta nuevamente.';
+          });
+          return;
+        }
+
+        paymentIntentId = paymentIntent.id;
+
+        if (kDebugMode) {
+          debugPrint('[PaymentConfirmationScreen] ✅ Payment Intent confirmado: $paymentIntentId');
+          debugPrint('[PaymentConfirmationScreen] 📊 Estado: ${confirmationResult['status']}');
+          debugPrint('[PaymentConfirmationScreen] 💡 El pago se procesará al finalizar el viaje');
+        }
+
+        // Actualizar el viaje con el payment_intent_id y estado 'authorized'
+        try {
+          await _rideService.updateRidePaymentStatus(
+            rideId: rideId,
+            paymentIntentId: paymentIntentId,
+            paymentStatus: 'authorized',
+          );
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('[PaymentConfirmationScreen] ⚠️ Error actualizando estado de pago: $e');
+          }
+          // No bloquear el flujo si falla la actualización
+        }
+      } else {
+        // Para otros métodos de pago (PayPal, efectivo, etc.), crear el viaje normalmente
+        await _rideService.createRideRequest(rideData);
+      }
 
       if (mounted) {
         setState(() {

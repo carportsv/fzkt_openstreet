@@ -85,6 +85,8 @@ class _RequestRideScreenState extends State<RequestRideScreen> {
   // Map State
   final MapController _mapController = MapController();
   bool _isMapReady = false; // Flag para saber si el mapa está listo
+  int _mapReadyRetryCount = 0; // Contador de reintentos para evitar bucle infinito
+  static const int _maxMapReadyRetries = 50; // Máximo 5 segundos (50 * 100ms)
   LatLng? _originCoords;
   LatLng? _destinationCoords;
   Marker? _originMarker;
@@ -2643,17 +2645,40 @@ class _RequestRideScreenState extends State<RequestRideScreen> {
   void _centerMapOnPoints() {
     // Verificar que el mapa esté listo antes de usar el MapController
     if (!_isMapReady) {
-      if (kDebugMode) {
-        debugPrint('[RequestRideScreen] ⏳ Mapa aún no está listo, esperando...');
-      }
-      // Reintentar después de un delay
-      Future.delayed(const Duration(milliseconds: 100), () {
-        if (mounted) {
-          _centerMapOnPoints();
+      // Incrementar contador de reintentos
+      _mapReadyRetryCount++;
+
+      // Si excedemos el límite de reintentos, marcar el mapa como listo forzosamente
+      if (_mapReadyRetryCount >= _maxMapReadyRetries) {
+        if (kDebugMode) {
+          debugPrint(
+            '[RequestRideScreen] ⚠️ Límite de reintentos alcanzado, forzando mapa como listo',
+          );
         }
-      });
-      return;
+        setState(() {
+          _isMapReady = true;
+          _mapReadyRetryCount = 0;
+        });
+        // Continuar con el centrado del mapa
+      } else {
+        if (kDebugMode && _mapReadyRetryCount % 10 == 0) {
+          // Solo imprimir cada 10 intentos para no saturar los logs
+          debugPrint(
+            '[RequestRideScreen] ⏳ Mapa aún no está listo, esperando... (intento $_mapReadyRetryCount/$_maxMapReadyRetries)',
+          );
+        }
+        // Reintentar después de un delay
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (mounted) {
+            _centerMapOnPoints();
+          }
+        });
+        return;
+      }
     }
+
+    // Resetear contador si el mapa está listo
+    _mapReadyRetryCount = 0;
 
     if (kDebugMode) {
       debugPrint(

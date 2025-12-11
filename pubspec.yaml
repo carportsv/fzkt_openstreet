@@ -28,6 +28,9 @@ dependencies:
   # Supabase
   supabase_flutter: ^2.0.0
 
+  # Stripe
+  flutter_stripe: ^11.1.0
+
   # Other dependencies
   cupertino_icons: ^1.0.8
   shared_preferences: ^2.2.1
@@ -61,6 +64,9 @@ dependencies:
   json_rpc_2: ^4.0.0
   path: ^1.9.1
   stack_trace: ^1.12.1
+  
+  # Image Picker
+  image_picker: ^1.1.2
 
 dev_dependencies:
   flutter_test:

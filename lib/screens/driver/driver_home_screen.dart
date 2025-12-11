@@ -164,6 +164,32 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
         debugPrint('[DriverHomeScreen] 🔌 Configurando suscripción para driver: $driverId');
       }
 
+      // Verificar si las notificaciones están habilitadas
+      try {
+        final driverResponse = await supabaseClient
+            .from('drivers')
+            .select('notifications_enabled')
+            .eq('id', driverId)
+            .maybeSingle();
+
+        if (driverResponse != null) {
+          final notificationsEnabled = driverResponse['notifications_enabled'] as bool? ?? true;
+          if (!notificationsEnabled) {
+            if (kDebugMode) {
+              debugPrint(
+                '[DriverHomeScreen] ⚠️ Notificaciones desactivadas para este driver, no se suscribirá',
+              );
+            }
+            return; // No suscribirse si las notificaciones están desactivadas
+          }
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('[DriverHomeScreen] ⚠️ Error verificando preferencia de notificaciones: $e');
+        }
+        // Continuar con la suscripción si hay error (fallback a permitir)
+      }
+
       // Verificar que Realtime esté habilitado para la tabla messages
       // Esto es importante porque si Realtime no está habilitado, no recibiremos eventos
       try {
@@ -285,6 +311,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                       title: title,
                       body: message,
                       data: {'type': 'ride_request', 'driver_id': driverId},
+                      driverId: driverId,
                     )
                     .then((_) {
                       if (kDebugMode) {

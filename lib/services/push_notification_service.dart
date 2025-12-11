@@ -244,6 +244,7 @@ class PushNotificationService {
     required String title,
     required String body,
     Map<String, dynamic>? data,
+    String? driverId,
   }) async {
     try {
       // Verificar que el servicio esté inicializado
@@ -252,6 +253,19 @@ class PushNotificationService {
           debugPrint('[PushNotificationService] ⚠️ Servicio no inicializado, inicializando...');
         }
         await initialize();
+      }
+
+      // Verificar preferencia del driver si se proporciona driverId
+      if (driverId != null) {
+        final enabled = await areNotificationsEnabled(driverId);
+        if (!enabled) {
+          if (kDebugMode) {
+            debugPrint(
+              '[PushNotificationService] ⚠️ Notificaciones desactivadas para driver $driverId',
+            );
+          }
+          return; // No mostrar notificación si está desactivada
+        }
       }
 
       if (kDebugMode) {
@@ -382,6 +396,32 @@ class PushNotificationService {
 
   /// Obtener el token FCM actual
   String? get fcmToken => _fcmToken;
+
+  /// Verificar si las notificaciones están habilitadas para un driver
+  Future<bool> areNotificationsEnabled(String driverId) async {
+    try {
+      final supabaseService = SupabaseService();
+      final supabaseClient = supabaseService.client;
+
+      final driverResponse = await supabaseClient
+          .from('drivers')
+          .select('notifications_enabled')
+          .eq('id', driverId)
+          .maybeSingle();
+
+      if (driverResponse != null) {
+        final enabled = driverResponse['notifications_enabled'] as bool?;
+        return enabled ?? true; // Por defecto true si es null
+      }
+
+      return true; // Por defecto permitir si no se encuentra
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[PushNotificationService] Error verificando preferencia: $e');
+      }
+      return true; // Por defecto permitir si hay error
+    }
+  }
 
   /// Limpiar recursos
   void dispose() {

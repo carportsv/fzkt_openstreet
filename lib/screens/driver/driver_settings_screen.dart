@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'driver_profile_edit_screen.dart';
+import 'driver_vehicle_info_screen.dart';
 
 class DriverSettingsScreen extends StatefulWidget {
   const DriverSettingsScreen({super.key});
@@ -10,8 +11,6 @@ class DriverSettingsScreen extends StatefulWidget {
 }
 
 class _DriverSettingsScreenState extends State<DriverSettingsScreen> {
-  bool _notificationsEnabled = true;
-
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
@@ -21,9 +20,10 @@ class _DriverSettingsScreenState extends State<DriverSettingsScreen> {
       ),
       child: SafeArea(
         child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
           slivers: [
             SliverPadding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 60, 16, 24),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
                   Container(
@@ -34,49 +34,39 @@ class _DriverSettingsScreenState extends State<DriverSettingsScreen> {
                     child: Column(
                       children: [
                         _buildSettingTile(
-                          icon: CupertinoIcons.bell,
-                          title: 'Notificaciones',
-                          subtitle: 'Recibir notificaciones de viajes',
-                          trailing: CupertinoSwitch(
-                            value: _notificationsEnabled,
-                            onChanged: (value) {
-                              setState(() => _notificationsEnabled = value);
-                            },
-                          ),
-                          isFirst: true,
-                        ),
-                        const Divider(height: 1, indent: 60),
-                        _buildSettingTile(
                           icon: CupertinoIcons.person,
                           title: 'Editar Perfil',
                           subtitle: 'Modificar información personal',
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Pantalla de perfil en desarrollo',
-                                  style: GoogleFonts.exo(),
-                                ),
-                                backgroundColor: CupertinoColors.systemOrange,
+                          onTap: () async {
+                            final result = await Navigator.of(context).push(
+                              CupertinoPageRoute(
+                                builder: (context) => const DriverProfileEditScreen(),
                               ),
                             );
+                            if (result == true) {
+                              // Recargar si hubo cambios
+                            }
                           },
+                          isFirst: true,
                         ),
-                        const Divider(height: 1, indent: 60),
+                        Container(
+                          height: 1,
+                          margin: const EdgeInsets.only(left: 60),
+                          color: CupertinoColors.separator,
+                        ),
                         _buildSettingTile(
                           icon: CupertinoIcons.car,
                           title: 'Información del Vehículo',
                           subtitle: 'Gestionar datos del carro',
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Pantalla de vehículo en desarrollo',
-                                  style: GoogleFonts.exo(),
-                                ),
-                                backgroundColor: CupertinoColors.systemOrange,
+                          onTap: () async {
+                            final result = await Navigator.of(context).push(
+                              CupertinoPageRoute(
+                                builder: (context) => const DriverVehicleInfoScreen(),
                               ),
                             );
+                            if (result == true) {
+                              // Recargar si hubo cambios
+                            }
                           },
                           isLast: true,
                         ),
@@ -101,12 +91,14 @@ class _DriverSettingsScreenState extends State<DriverSettingsScreen> {
     bool isFirst = false,
     bool isLast = false,
   }) {
+    final iconColor = CupertinoColors.activeBlue;
+
     return CupertinoButton(
       padding: EdgeInsets.zero,
       minimumSize: Size.zero,
       onPressed: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         decoration: BoxDecoration(
           color: CupertinoColors.systemBackground,
           borderRadius: BorderRadius.only(
@@ -122,10 +114,10 @@ class _DriverSettingsScreenState extends State<DriverSettingsScreen> {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: CupertinoColors.activeBlue.withValues(alpha: 0.1),
+                color: iconColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, color: CupertinoColors.activeBlue, size: 22),
+              child: Icon(icon, color: iconColor, size: 22),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -149,6 +141,8 @@ class _DriverSettingsScreenState extends State<DriverSettingsScreen> {
                       color: CupertinoColors.secondaryLabel,
                       decoration: TextDecoration.none,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
