@@ -92,12 +92,20 @@ external JSObject get window;
 
 bool isStripeHelperAvailable() {
   try {
-    final dynamic win = window as dynamic;
-    final hasHelper = win.stripeHelper != null;
-    final hasInitialize = win.stripeInitialize != null;
-    final hasCreatePaymentMethod = win.stripeCreatePaymentMethod != null;
-    final hasConfirmPayment = win.stripeConfirmPayment != null;
-    final hasStripe = win.Stripe != null;
+    // Convertir window a objeto Dart para acceder a propiedades dinámicas
+    final winObj = dartify(window) as Map<String, dynamic>?;
+    if (winObj == null) {
+      if (kDebugMode) {
+        debugPrint('[isStripeHelperAvailable] window es null');
+      }
+      return false;
+    }
+
+    final hasHelper = winObj['stripeHelper'] != null;
+    final hasInitialize = winObj['stripeInitialize'] != null;
+    final hasCreatePaymentMethod = winObj['stripeCreatePaymentMethod'] != null;
+    final hasConfirmPayment = winObj['stripeConfirmPayment'] != null;
+    final hasStripe = winObj['Stripe'] != null;
 
     if (kDebugMode) {
       debugPrint('[isStripeHelperAvailable] Verificando disponibilidad:');

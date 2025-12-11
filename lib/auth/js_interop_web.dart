@@ -120,8 +120,12 @@ external JSObject get window;
 
 bool isFirebaseAuthHelperAvailable() {
   try {
-    final dynamic win = window as dynamic;
-    return win.firebaseAuthSignInWithGoogle != null;
+    // Convertir window a objeto Dart para acceder a propiedades dinámicas
+    final winObj = dartify(window) as Map<String, dynamic>?;
+    if (winObj == null) {
+      return false;
+    }
+    return winObj['firebaseAuthSignInWithGoogle'] != null;
   } catch (e) {
     return false;
   }
