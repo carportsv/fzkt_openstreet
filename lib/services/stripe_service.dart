@@ -99,23 +99,13 @@ class StripeService {
         }
 
         // En web, usar Stripe.js a través de JS interop
-        // Verificar que Stripe helper esté disponible
-        if (!isStripeHelperAvailable()) {
-          if (kDebugMode) {
-            debugPrint('[StripeService] ❌ Stripe helper no está disponible en web');
-          }
-          return {
-            'success': false,
-            'status': 'failed',
-            'error':
-                'Stripe no está inicializado correctamente. Recarga la página e intenta nuevamente.',
-          };
-        }
-
         try {
-          // 1. Inicializar Stripe si no está inicializado
+          // 1. Verificar y obtener la clave pública
           final publishableKey = StripeConfig.publishableKey;
           if (publishableKey.isEmpty) {
+            if (kDebugMode) {
+              debugPrint('[StripeService] ❌ Stripe publishable key vacía');
+            }
             return {
               'success': false,
               'status': 'failed',
@@ -123,7 +113,27 @@ class StripeService {
             };
           }
 
-          // Inicializar Stripe (esto es idempotente, puede llamarse múltiples veces)
+          // 2. Verificar que Stripe helper esté disponible antes de intentar usarlo
+          if (!isStripeHelperAvailable()) {
+            if (kDebugMode) {
+              debugPrint('[StripeService] ⚠️ Stripe helper no disponible, esperando...');
+            }
+            // Esperar un poco y reintentar (puede ser un problema de timing)
+            await Future.delayed(const Duration(milliseconds: 500));
+            if (!isStripeHelperAvailable()) {
+              if (kDebugMode) {
+                debugPrint('[StripeService] ❌ Stripe helper aún no disponible después de esperar');
+              }
+              return {
+                'success': false,
+                'status': 'failed',
+                'error':
+                    'Stripe no está inicializado correctamente. Recarga la página e intenta nuevamente.',
+              };
+            }
+          }
+
+          // 3. Inicializar Stripe (esto es idempotente, puede llamarse múltiples veces)
           try {
             final initResult = stripeInitializeJS(publishableKey);
             await initResult.toDart;
@@ -132,7 +142,10 @@ class StripeService {
             }
           } catch (e) {
             if (kDebugMode) {
-              debugPrint('[StripeService] ⚠️ Stripe ya estaba inicializado o error: $e');
+              debugPrint('[StripeService] ⚠️ Error inicializando Stripe: $e');
+              debugPrint(
+                '[StripeService] Continuando de todas formas (puede que ya esté inicializado)...',
+              );
             }
             // Continuar aunque falle la inicialización (puede que ya esté inicializado)
           }

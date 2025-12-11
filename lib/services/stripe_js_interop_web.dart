@@ -93,11 +93,26 @@ external JSObject get window;
 bool isStripeHelperAvailable() {
   try {
     final dynamic win = window as dynamic;
-    return win.stripeHelper != null ||
-        win.stripeInitialize != null ||
-        win.stripeCreatePaymentMethod != null ||
-        win.stripeConfirmPayment != null;
+    final hasHelper = win.stripeHelper != null;
+    final hasInitialize = win.stripeInitialize != null;
+    final hasCreatePaymentMethod = win.stripeCreatePaymentMethod != null;
+    final hasConfirmPayment = win.stripeConfirmPayment != null;
+    final hasStripe = win.Stripe != null;
+
+    if (kDebugMode) {
+      debugPrint('[isStripeHelperAvailable] Verificando disponibilidad:');
+      debugPrint('  - stripeHelper: $hasHelper');
+      debugPrint('  - stripeInitialize: $hasInitialize');
+      debugPrint('  - stripeCreatePaymentMethod: $hasCreatePaymentMethod');
+      debugPrint('  - stripeConfirmPayment: $hasConfirmPayment');
+      debugPrint('  - Stripe (SDK): $hasStripe');
+    }
+
+    return hasHelper || hasInitialize || hasCreatePaymentMethod || hasConfirmPayment;
   } catch (e) {
+    if (kDebugMode) {
+      debugPrint('[isStripeHelperAvailable] Error verificando: $e');
+    }
     return false;
   }
 }
