@@ -94,13 +94,15 @@ void main() async {
   }
 
   // Inicializar Stripe solo si las variables de entorno están cargadas
-  if (envLoaded) {
+  // En web, no inicializamos Stripe.publishableKey porque usamos Stripe.js directamente
+  // En móvil, sí necesitamos inicializar Stripe.publishableKey para flutter_stripe
+  if (envLoaded && !kIsWeb) {
     try {
       final stripePublishableKey = StripeConfig.publishableKey;
       if (stripePublishableKey.isNotEmpty) {
         Stripe.publishableKey = stripePublishableKey;
         if (kDebugMode) {
-          debugPrint('✅ Stripe inicializado con clave pública');
+          debugPrint('✅ Stripe inicializado con clave pública (móvil)');
         }
       } else {
         if (kDebugMode) {
@@ -112,6 +114,15 @@ void main() async {
         debugPrint('⚠️ Error inicializando Stripe: $e');
       }
       // Continuar - las operaciones de Stripe manejarán el error
+    }
+  } else if (envLoaded && kIsWeb) {
+    if (kDebugMode) {
+      final stripePublishableKey = StripeConfig.publishableKey;
+      if (stripePublishableKey.isNotEmpty) {
+        debugPrint('✅ Stripe configurado para web (usando Stripe.js)');
+      } else {
+        debugPrint('⚠️ Stripe no se configurará: clave pública no disponible');
+      }
     }
   }
 
