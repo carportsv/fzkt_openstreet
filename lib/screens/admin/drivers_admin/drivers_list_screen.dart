@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../auth/supabase_service.dart';
+import 'driver_form_screen.dart';
 
 class DriversListScreen extends StatefulWidget {
   final String status;
@@ -480,227 +481,42 @@ class _DriversListScreenState extends State<DriversListScreen> {
   Widget _buildAddNewButton() {
     return SizedBox(
       width: double.infinity,
-      child: ElevatedButton(
+      child: ElevatedButton.icon(
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF2563EB),
+          backgroundColor: const Color(0xFF1D4ED8),
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
-        onPressed: () {
-          // Implementar navegación a pantalla de agregar conductor
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Función de agregar conductor próximamente')),
-          );
-        },
-        child: const Text(
-          'Add New',
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: const Text(
+          'Agregar Nuevo Conductor',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const DriverFormScreen(),
+            ),
+          );
+          if (result == true) {
+            await _loadDrivers();
+          }
+        },
       ),
     );
   }
 
-  void _handleEdit(Map<String, dynamic> driver) {
-    final user = driver['user'] as Map<String, dynamic>?;
-    final carInfo = driver['car_info'] as Map<String, dynamic>?;
-
-    final nameController = TextEditingController(text: user?['display_name'] ?? '');
-    final emailController = TextEditingController(text: user?['email'] ?? '');
-    final modelController = TextEditingController(text: carInfo?['model'] ?? '');
-    final plateController = TextEditingController(text: carInfo?['plate'] ?? '');
-
-    // Determinar el estado actual basado en status e is_available
-    String currentDriverStatus = driver['status'] ?? 'active';
-    bool currentIsAvailable = driver['is_available'] ?? true;
-
-    // Convertir a estado amigable para el dropdown
-    String currentStatus;
-    if (currentDriverStatus == 'active') {
-      currentStatus = 'active';
-    } else if (currentDriverStatus == 'busy') {
-      currentStatus = 'suspended';
-    } else if (currentDriverStatus == 'inactive' && currentIsAvailable) {
-      currentStatus = 'pending';
-    } else {
-      currentStatus = 'deleted';
+  void _handleEdit(Map<String, dynamic> driver) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => DriverFormScreen(driverData: driver),
+      ),
+    );
+    if (result == true) {
+      await _loadDrivers();
     }
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)),
-          title: const Text('Editar Conductor'),
-          content: SingleChildScrollView(
-            child: StatefulBuilder(
-              builder: (BuildContext context, StateSetter setState) {
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Nombre',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: emailController,
-                      readOnly: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Email',
-                        border: OutlineInputBorder(),
-                        fillColor: Color(0xFFf2f2f2),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: modelController,
-                      decoration: const InputDecoration(
-                        labelText: 'Modelo del Vehículo',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: plateController,
-                      decoration: const InputDecoration(
-                        labelText: 'Placa',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildDropdown('Estado', currentStatus, [
-                      'active',
-                      'suspended',
-                      'pending',
-                      'deleted',
-                    ], (val) => setState(() => currentStatus = val!)),
-                  ],
-                );
-              },
-            ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB)),
-              child: const Text('Actualizar', style: TextStyle(color: Colors.white)),
-              onPressed: () async {
-                if (!mounted) return;
-                final navigator = Navigator.of(context);
-                final scaffoldMessenger = ScaffoldMessenger.of(context);
-
-                try {
-                  final supabaseClient = _supabaseService.client;
-                  final driverId = driver['id'] as String;
-
-                  // Convertir el estado amigable a los valores de la base de datos
-                  String dbStatus;
-                  bool dbIsAvailable;
-
-                  switch (currentStatus) {
-                    case 'active':
-                      dbStatus = 'active';
-                      dbIsAvailable = true;
-                      break;
-                    case 'suspended':
-                      dbStatus = 'busy';
-                      dbIsAvailable = false;
-                      break;
-                    case 'pending':
-                      dbStatus = 'inactive';
-                      dbIsAvailable = true;
-                      break;
-                    case 'deleted':
-                      dbStatus = 'inactive';
-                      dbIsAvailable = false;
-                      break;
-                    default:
-                      dbStatus = 'active';
-                      dbIsAvailable = true;
-                  }
-
-                  // Actualizar datos del conductor
-                  await supabaseClient
-                      .from('drivers')
-                      .update({
-                        'status': dbStatus,
-                        'is_available': dbIsAvailable,
-                        'car_info': {
-                          'model': modelController.text,
-                          'plate': plateController.text,
-                          if (carInfo?['year'] != null) 'year': carInfo?['year'],
-                        },
-                        'updated_at': DateTime.now().toIso8601String(),
-                      })
-                      .eq('id', driverId);
-
-                  // Actualizar datos del usuario si hay cambios
-                  if (nameController.text.isNotEmpty && user?['id'] != null) {
-                    await supabaseClient
-                        .from('users')
-                        .update({
-                          'display_name': nameController.text,
-                          'updated_at': DateTime.now().toIso8601String(),
-                        })
-                        .eq('id', user!['id']);
-                  }
-
-                  if (!mounted) return;
-                  navigator.pop();
-
-                  if (!mounted) return;
-                  scaffoldMessenger.showSnackBar(
-                    const SnackBar(
-                      content: Text('Conductor actualizado exitosamente'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-
-                  // Recargar la lista
-                  await _loadDrivers();
-                } catch (e) {
-                  if (!mounted) return;
-                  navigator.pop();
-
-                  if (!mounted) return;
-                  scaffoldMessenger.showSnackBar(
-                    SnackBar(content: Text('Error al actualizar: $e'), backgroundColor: Colors.red),
-                  );
-                }
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildDropdown(
-    String label,
-    String currentValue,
-    List<String> items,
-    ValueChanged<String?> onChanged,
-  ) {
-    return InputDecorator(
-      decoration: InputDecoration(
-        labelText: label,
-        border: const OutlineInputBorder(),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          isDense: true,
-          value: currentValue,
-          items: items
-              .map((String value) => DropdownMenuItem<String>(value: value, child: Text(value)))
-              .toList(),
-          onChanged: onChanged,
-        ),
-      ),
-    );
   }
 
   void _handleDelete(Map<String, dynamic> driver) {

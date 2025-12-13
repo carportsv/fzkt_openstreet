@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'drivers_list_screen.dart';
+import 'driver_form_screen.dart';
 import '../../../auth/supabase_service.dart';
 
 class DriversAdminIndex extends StatefulWidget {
@@ -70,16 +71,31 @@ class _DriversAdminIndexState extends State<DriversAdminIndex> {
                 children: [
                   const Icon(Icons.local_taxi, color: Color(0xFF1A202C), size: 28),
                   const SizedBox(width: 8),
-                  Text(
-                    'Drivers',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF1A202C),
-                      fontSize: isTablet ? null : 24,
+                  Expanded(
+                    child: Text(
+                      'Drivers',
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF1A202C),
+                        fontSize: isTablet ? null : 24,
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  const Icon(Icons.keyboard_arrow_down, color: Color(0xFF1A202C), size: 24),
+                  IconButton(
+                    icon: const Icon(Icons.add_circle_outline, color: Color(0xFF1D4ED8)),
+                    onPressed: () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const DriverFormScreen(),
+                        ),
+                      );
+                      if (result == true) {
+                        _loadStats();
+                      }
+                    },
+                    tooltip: 'Agregar nuevo conductor',
+                  ),
                 ],
               ),
               const SizedBox(height: 24),

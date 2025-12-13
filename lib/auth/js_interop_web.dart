@@ -1,43 +1,19 @@
 // Archivo solo para web - contiene la función JS interop
 import 'dart:async';
 import 'dart:js_interop';
-import 'package:flutter/foundation.dart';
 
 // Función helper para verificar si un objeto es una Promise
-bool _isPromise(JSAny? obj) {
+bool _isPromise(dynamic obj) {
   if (obj == null) return false;
   try {
-    final dynamicObj = obj as dynamic;
     // Verificar que tenga el método then (las Promises de JavaScript siempre tienen then)
-    // No podemos verificar el tipo en tiempo de ejecución de manera segura en Dart,
-    // así que solo verificamos que exista el método
-    return dynamicObj.then != null;
+    // También verificar que then sea una función
+    final thenMethod = obj.then;
+    if (thenMethod == null) return false;
+    // Verificar que sea una función (Function o cualquier callable)
+    return thenMethod is Function;
   } catch (e) {
     return false;
-  }
-}
-
-// Función helper para llamar then en una promesa usando interop
-void _callPromiseThen(JSObject promise, JSFunction onResolve, JSFunction onReject) {
-  try {
-    // Acceder al método then de la promesa usando dynamic
-    // Esto es necesario porque JSObject no expone directamente el método then
-    final dynamicPromise = promise as dynamic;
-
-    // Verificar que tenga el método then
-    if (dynamicPromise.then == null) {
-      throw Exception('El objeto no es una Promise válida: no tiene método then');
-    }
-
-    // Llamar then directamente usando dynamic
-    // En JavaScript: promise.then(onResolve, onReject)
-    dynamicPromise.then(onResolve, onReject);
-  } catch (e) {
-    if (kDebugMode) {
-      debugPrint('[JSPromiseExtension] Error en _callPromiseThen: $e');
-      debugPrint('[JSPromiseExtension] Promise type: ${promise.runtimeType}');
-    }
-    rethrow;
   }
 }
 
@@ -47,41 +23,30 @@ extension JSPromiseExtension<T extends JSAny?> on JSPromise<T> {
   Future<T> get toDart {
     final completer = Completer<T>();
 
-    // Convertir a JSObject
-    JSObject promise;
+    // Intentar convertir directamente como dynamic primero (más flexible)
+    dynamic promiseObj;
     try {
-      promise = this as JSObject;
-    } catch (e) {
-      // Si no se puede convertir a JSObject, intentar como dynamic
-      try {
-        final dynamicObj = this as dynamic;
-        // Si es una Promise nativa de JavaScript, usar directamente
-        if (_isPromise(dynamicObj)) {
-          promise = dynamicObj as JSObject;
-        } else {
-          completer.completeError(
-            Exception('El objeto retornado no es una Promise válida. Tipo: $runtimeType'),
-          );
-          return completer.future;
-        }
-      } catch (e2) {
-        completer.completeError(Exception('Error al convertir a JSObject: $e, $e2'));
+      // Intentar como dynamic primero para mayor compatibilidad
+      promiseObj = this as dynamic;
+      
+      // Verificar que sea una Promise válida
+      if (!_isPromise(promiseObj)) {
+        completer.completeError(
+          Exception('El objeto retornado no es una Promise válida. Tipo: ${promiseObj.runtimeType}'),
+        );
         return completer.future;
       }
-    }
-
-    // Verificar que sea una promesa válida
-    if (!_isPromise(promise)) {
+    } catch (e) {
       completer.completeError(
-        Exception('El objeto retornado no es una Promise válida. Tipo: ${promise.runtimeType}'),
+        Exception('Error al verificar Promise: $e. Tipo: $runtimeType'),
       );
       return completer.future;
     }
 
     // Crear funciones JS para manejar resolve y reject
-    final onResolve = ((T result) {
+    final onResolve = ((JSAny? result) {
       if (!completer.isCompleted) {
-        completer.complete(result);
+        completer.complete(result as T);
       }
     }).toJS;
 
@@ -89,19 +54,24 @@ extension JSPromiseExtension<T extends JSAny?> on JSPromise<T> {
       if (!completer.isCompleted) {
         try {
           final errorObj = error?.dartify();
-          completer.completeError(errorObj ?? 'Unknown error');
+          final errorMessage = errorObj is Map 
+              ? (errorObj['message'] ?? errorObj.toString())
+              : (errorObj?.toString() ?? 'Unknown error');
+          completer.completeError(Exception(errorMessage));
         } catch (e) {
-          completer.completeError('Error al procesar el rechazo de la Promise: $e');
+          completer.completeError(Exception('Error al procesar el rechazo de la Promise: $e'));
         }
       }
     }).toJS;
 
     try {
-      // Llamar a then usando la función helper
-      _callPromiseThen(promise, onResolve, onReject);
+      // Llamar then directamente usando dynamic
+      promiseObj.then(onResolve, onReject);
     } catch (e) {
       if (!completer.isCompleted) {
-        completer.completeError(Exception('Error al convertir JSPromise a Future: $e'));
+        completer.completeError(
+          Exception('Error al convertir JSPromise a Future: $e. Tipo: ${promiseObj.runtimeType}'),
+        );
       }
     }
 
