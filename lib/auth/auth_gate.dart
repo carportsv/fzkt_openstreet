@@ -311,6 +311,15 @@ class _AuthGateContentState extends State<_AuthGateContent> {
             String fragment = Uri.base.fragment;
             final fullUri = Uri.base.toString();
             
+            // Normalizar el path removiendo el base-href si está presente (GitHub Pages)
+            String normalizedPath = path;
+            if (path.startsWith('/eug_consultancy')) {
+              normalizedPath = path.replaceFirst('/eug_consultancy', '');
+              if (normalizedPath.isEmpty) {
+                normalizedPath = '/';
+              }
+            }
+            
             // Si el fragmento está vacío, intentar leerlo de window.location.hash
             if (fragment.isEmpty && kIsWeb) {
               try {
@@ -333,10 +342,13 @@ class _AuthGateContentState extends State<_AuthGateContent> {
               }
             }
             
-            // Verificar si es ruta admin (path o hash)
+            // Verificar si es ruta admin (path o hash) - considerar tanto path original como normalizado
             isAdminRoute = path.contains('/admin') ||
                 path.endsWith('/admin') ||
                 path == '/admin' ||
+                normalizedPath.contains('/admin') ||
+                normalizedPath.endsWith('/admin') ||
+                normalizedPath == '/admin' ||
                 fragment.contains('/admin') ||
                 fragment == 'admin' ||
                 fragment == '/admin' ||

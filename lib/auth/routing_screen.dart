@@ -11,6 +11,8 @@ import 'package:fzkt_openstreet/screens/welcome/welcome/welcome_screen.dart';
 // Import local auth files
 import './login_screen.dart';
 import 'user_service.dart';
+// Importación condicional para leer hash en web
+import '../router/route_handler_stub.dart' if (dart.library.html) '../router/route_handler_web.dart';
 
 class RoutingScreen extends StatefulWidget {
   const RoutingScreen({super.key});
@@ -154,9 +156,72 @@ class _RoutingScreenState extends State<RoutingScreen> {
 
     if (!mounted) return;
 
+    // En web, verificar si venimos de la ruta /admin para redirigir correctamente
+    bool isAdminRoute = false;
+    if (kIsWeb) {
+      try {
+        String path = Uri.base.path;
+        String fragment = Uri.base.fragment;
+        final fullUri = Uri.base.toString();
+        
+        // Si el fragmento está vacío, intentar leerlo de window.location.hash
+        if (fragment.isEmpty && kIsWeb) {
+          try {
+            fragment = getHashFromWindow();
+            if (kDebugMode && fragment.isNotEmpty) {
+              debugPrint('[RoutingScreen] Hash obtenido de window.location: $fragment');
+            }
+          } catch (e) {
+            if (kDebugMode) {
+              debugPrint('[RoutingScreen] Error obteniendo hash: $e');
+            }
+          }
+        }
+        
+        // Normalizar el fragment
+        String normalizedFragment = fragment;
+        if (fragment.isNotEmpty) {
+          if (!fragment.startsWith('/')) {
+            normalizedFragment = '/$fragment';
+          }
+        }
+        
+        // Verificar si es ruta admin (path o hash)
+        isAdminRoute = path.contains('/admin') ||
+            path.endsWith('/admin') ||
+            path == '/admin' ||
+            fragment.contains('/admin') ||
+            fragment == 'admin' ||
+            fragment == '/admin' ||
+            normalizedFragment == '/admin' ||
+            normalizedFragment.contains('/admin') ||
+            fullUri.contains('/admin') ||
+            fullUri.contains('#/admin') ||
+            fullUri.contains('index.html#/admin');
+        
+        if (kDebugMode) {
+          debugPrint('[RoutingScreen] Web - Path: $path, Fragment: $fragment, Normalized: $normalizedFragment');
+          debugPrint('[RoutingScreen] Web - Full URI: $fullUri');
+          debugPrint('[RoutingScreen] Web - Is admin route: $isAdminRoute');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('[RoutingScreen] Error verificando ruta: $e');
+        }
+      }
+    }
+
     switch (role) {
       case 'admin':
+        // Si es admin y venía de /admin, redirigir a AdminHomeScreen
+        // Si es admin pero no venía de /admin, también redirigir a AdminHomeScreen
         destination = const AdminHomeScreen();
+        if (kDebugMode) {
+          debugPrint('[RoutingScreen] Usuario es admin, redirigiendo a AdminHomeScreen');
+          if (isAdminRoute) {
+            debugPrint('[RoutingScreen] Usuario venía de ruta /admin');
+          }
+        }
         break;
       case 'driver':
         destination = const DriverHomeScreen();
