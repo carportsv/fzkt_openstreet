@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'firebase_options.dart';
 import 'user_service.dart';
 import 'routing_screen.dart';
 import '../screens/welcome/carousel/background/background_carousel.dart';
@@ -14,7 +13,6 @@ import '../screens/welcome/carousel/background/background_carousel.dart';
 // En web: usa js_interop_web.dart con dart:js_interop
 // En móvil: usa js_interop_mobile.dart con stubs
 // Nota: Importamos sin 'show' para que las extensiones estén disponibles
-import 'js_interop_mobile.dart' if (dart.library.html) 'js_interop_web.dart';
 
 // Constants
 const _kPrimaryColor = Color(0xFF1D4ED8);
@@ -37,135 +35,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
 
-  Future<Map<String, dynamic>> _firebaseAuthSignInWithGoogleWeb(Map<String, String> config) async {
-    if (!kIsWeb) {
-      throw UnsupportedError('Este método solo está disponible en web');
-    }
-
-    try {
-      // Nota: La verificación de disponibilidad se hace implícitamente al llamar la función
-      // Si la función no está disponible, se lanzará un error que será capturado más abajo
-
-      // En web, usar js_interop directamente
-      // jsify y dartify son funciones top-level importadas condicionalmente
-      final jsConfig = jsify(config);
-
-      // Llamar a la función JavaScript y convertir JSPromise a Future
-      final jsPromise = firebaseAuthSignInWithGoogleJS(jsConfig);
-
-      // Convertir JSPromise a Future usando la extensión toDart
-      dynamic jsResult;
-      try {
-        // Convertir JSPromise a Future usando la extensión toDart
-        jsResult = await jsPromise.toDart;
-      } catch (e) {
-        debugPrint('[LoginScreen] Error al convertir JSPromise: ${e.toString()}');
-        final errorStr = e.toString();
-
-        // Si el error contiene "POPUP_BLOCKED", relanzar con mensaje más claro
-        if (errorStr.contains('POPUP_BLOCKED') || errorStr.contains('popup')) {
-          throw Exception(
-            'POPUP_BLOCKED: El popup fue bloqueado.\n\n'
-            'Por favor, permite popups en tu navegador para este sitio y vuelve a intentar.',
-          );
-        }
-
-        // Si el error contiene "API key", proporcionar mensaje más útil
-        if (errorStr.contains('API key') || errorStr.contains('api-key')) {
-          throw Exception(
-            'Error de configuración de Firebase: La API key no es válida o aún no se ha propagado.\n\n'
-            'Esto puede tardar hasta 5 minutos después de configurar la API key en Google Cloud Console.\n\n'
-            'Por favor, espera unos minutos y vuelve a intentar, o verifica la configuración de la API key.',
-          );
-        }
-
-        // Si el error es sobre Promise, intentar usar el método alternativo
-        if (errorStr.contains('Promise') || errorStr.contains('LegacyJavaScriptObject')) {
-          debugPrint(
-            '[LoginScreen] ⚠️ Problema con Promise, el error será manejado por el fallback',
-          );
-          // Relanzar para que se use el fallback
-          rethrow;
-        }
-
-        rethrow;
-      }
-
-      // Verificar que jsResult no sea null
-      if (jsResult == null) {
-        throw Exception(
-          'El resultado de la autenticación es null.\n\n'
-          'Esto puede ocurrir si el popup fue bloqueado o cerrado.\n'
-          'Por favor, permite popups en tu navegador para este sitio.',
-        );
-      }
-
-      // Extraer los datos del resultado usando dartify
-      // jsResult es un JSObject cuando viene de toDart
-      final resultMap = dartify(jsResult as dynamic);
-
-      // Verificar que resultMap es un Map antes de acceder
-      if (resultMap is! Map) {
-        throw Exception('Resultado inesperado de la autenticación: ${resultMap.runtimeType}');
-      }
-
-      // Verificar si se usó redirect
-      if (resultMap['redirect'] == true) {
-        debugPrint('[LoginScreen] ✅ Redirect iniciado, la página se recargará');
-        // El redirect ya se inició, la página se recargará automáticamente
-        // No necesitamos hacer nada más aquí
-        throw Exception(
-          'REDIRECT_INICIADO: La autenticación se completará después de la redirección.',
-        );
-      }
-
-      final credentialData = resultMap['credential'] as Map?;
-      final idToken = credentialData?['idToken'] as String?;
-      final accessToken = credentialData?['accessToken'] as String?;
-
-      // Si no hay tokens en credential, intentar obtener idToken del usuario
-      if (idToken == null && accessToken == null) {
-        // Verificar si hay un usuario en el resultado
-        final userData = resultMap['user'] as Map?;
-        if (userData != null) {
-          debugPrint(
-            '[LoginScreen] ⚠️ No hay credential, pero hay user. El usuario puede estar ya autenticado.',
-          );
-          // Si el usuario ya está autenticado, Firebase Auth puede manejar esto automáticamente
-          // Retornar null para que el código continúe con el flujo normal
-          throw Exception(
-            'No se pudieron obtener los tokens de autenticación del popup.\n'
-            'El usuario puede estar ya autenticado. Verificando estado...',
-          );
-        }
-
-        throw Exception(
-          'No se pudieron obtener los tokens de autenticación. idToken: ${idToken != null}, accessToken: ${accessToken != null}',
-        );
-      }
-
-      // Verificar que al menos idToken esté disponible (requerido por Firebase)
-      if (idToken == null || idToken.isEmpty) {
-        debugPrint('[LoginScreen] ❌ idToken es null o vacío');
-        throw Exception('No se pudo obtener el idToken de la autenticación');
-      }
-
-      // accessToken puede ser opcional en algunos casos
-      // Firebase puede funcionar solo con idToken si accessToken no está disponible
-      if (accessToken == null || accessToken.isEmpty) {
-        debugPrint('[LoginScreen] ⚠️ accessToken no está disponible, pero idToken está disponible');
-        debugPrint('[LoginScreen] ℹ️ Firebase puede funcionar solo con idToken');
-      }
-
-      return {
-        'idToken': idToken,
-        'accessToken': accessToken?.isNotEmpty == true ? accessToken! : '',
-      };
-    } catch (e) {
-      debugPrint('[LoginScreen] Error en _firebaseAuthSignInWithGoogleWeb: ${e.toString()}');
-      rethrow;
-    }
-  }
 
   @override
   void initState() {
@@ -237,87 +106,27 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       UserCredential userCredential;
 
       if (kIsWeb) {
-        // En web, usar Firebase Auth directamente con JavaScript interop
-        debugPrint('[LoginScreen] Usando Firebase Auth directamente para web...');
+        // En web, usar Firebase Auth directamente con signInWithPopup
+        debugPrint('[LoginScreen] Usando Firebase Auth signInWithPopup para web...');
         try {
-          // Obtener configuración de Firebase
-          final firebaseOptions = await DefaultFirebaseOptions.currentPlatform;
-
-          // Crear objeto de configuración para JavaScript
-          // Nota: FirebaseOptions valida que estos campos no sean null en tiempo de ejecución
-          final firebaseConfig = <String, String>{
-            'apiKey': firebaseOptions.apiKey,
-            'authDomain': firebaseOptions.authDomain ?? '',
-            'projectId': firebaseOptions.projectId,
-            if (firebaseOptions.storageBucket != null)
-              'storageBucket': firebaseOptions.storageBucket!,
-            'messagingSenderId': firebaseOptions.messagingSenderId,
-            'appId': firebaseOptions.appId,
-          };
-
-          // Log de la configuración (solo primeros y últimos caracteres de API key por seguridad)
-          debugPrint('[LoginScreen] Configuración de Firebase para web:');
-          debugPrint(
-            '[LoginScreen] API Key: ${firebaseOptions.apiKey.substring(0, 10)}...${firebaseOptions.apiKey.substring(firebaseOptions.apiKey.length - 5)} (longitud: ${firebaseOptions.apiKey.length})',
-          );
-          debugPrint('[LoginScreen] Project ID: ${firebaseOptions.projectId}');
-          debugPrint('[LoginScreen] Auth Domain: ${firebaseOptions.authDomain}');
-          debugPrint('[LoginScreen] Messaging Sender ID: ${firebaseOptions.messagingSenderId}');
-          debugPrint('[LoginScreen] App ID: ${firebaseOptions.appId}');
-
-          // Llamar a la función JavaScript usando js_interop
-          final tokens = await _firebaseAuthSignInWithGoogleWeb(firebaseConfig);
-          final idToken = tokens['idToken'] as String;
-          final accessToken = tokens['accessToken'] as String?;
-
-          debugPrint('[LoginScreen] ✅ Tokens obtenidos de Firebase Auth JS');
-          debugPrint('[LoginScreen] idToken: ${idToken.isNotEmpty ? "✅ Disponible" : "❌ Vacío"}');
-          debugPrint(
-            '[LoginScreen] accessToken: ${accessToken != null && accessToken.isNotEmpty ? "✅ Disponible" : "⚠️ No disponible (usando solo idToken)"}',
-          );
-
-          // Crear credencial y autenticar con Firebase
-          // Firebase puede funcionar solo con idToken si accessToken no está disponible
-          final credential = GoogleAuthProvider.credential(
-            accessToken: accessToken?.isNotEmpty == true ? accessToken : null,
-            idToken: idToken,
-          );
-
-          debugPrint('[LoginScreen] Autenticando con Firebase...');
-          userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
-          debugPrint('[LoginScreen] ✅ Autenticado con Firebase');
+          final googleProvider = GoogleAuthProvider();
+          userCredential = await FirebaseAuth.instance.signInWithPopup(googleProvider);
+          debugPrint('[LoginScreen] ✅ Autenticado con Firebase usando signInWithPopup');
         } catch (e) {
           final errorMessage = e.toString();
-          debugPrint('[LoginScreen] ⚠️ Error con Firebase Auth JS: $errorMessage');
+          debugPrint('[LoginScreen] ⚠️ Error con Firebase Auth signInWithPopup: $errorMessage');
 
-          // Si el error es de popup bloqueado o redirect iniciado, el redirect ya se manejó
-          if (errorMessage.contains('REDIRECT_INICIADO')) {
-            debugPrint('[LoginScreen] ✅ Redirect iniciado, esperando recarga de página');
-            _isSigningIn = false;
-            if (mounted) setState(() => _isLoading = false);
-            // Mostrar mensaje informativo
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Redirigiendo a Google para autenticación...'),
-                  backgroundColor: Colors.blue,
-                  duration: Duration(seconds: 3),
-                ),
-              );
-            }
-            return;
-          }
-
-          // Si el error es de popup bloqueado, el código JS ya intentó usar redirect
-          // Si llegamos aquí, significa que el redirect también falló
-          if (errorMessage.contains('POPUP_BLOCKED') || errorMessage.contains('popup')) {
+          // Manejar errores específicos de popup
+          if (errorMessage.contains('popup-blocked') ||
+              errorMessage.contains('popup_closed_by_user') ||
+              errorMessage.contains('POPUP_BLOCKED')) {
             _isSigningIn = false;
             if (mounted) {
               setState(() => _isLoading = false);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: const Text(
-                    'No se pudo iniciar la autenticación. Por favor, verifica la configuración del navegador.',
+                    'El popup fue bloqueado. Por favor, permite popups en tu navegador para este sitio.',
                   ),
                   backgroundColor: Colors.orange,
                   duration: const Duration(seconds: 5),
@@ -332,51 +141,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             return;
           }
 
-          // Fallback a google_sign_in solo si el error no es de popup bloqueado
-          debugPrint('[LoginScreen] Intentando con google_sign_in como fallback...');
-          final GoogleSignIn googleSignIn = GoogleSignIn(
-            clientId: webClientId,
-            scopes: ['email', 'profile'],
-          );
-
-          final googleUser = await googleSignIn.signIn();
-          if (googleUser == null) {
-            debugPrint('[LoginScreen] Usuario canceló el inicio de sesión');
-            _isSigningIn = false;
-            if (mounted) setState(() => _isLoading = false);
-            return;
-          }
-
-          final googleAuth = await googleUser.authentication;
-
-          // En web, google_sign_in puede no retornar idToken con el método deprecado
-          // Intentar autenticar solo con accessToken si idToken no está disponible
-          if (googleAuth.accessToken == null) {
-            throw Exception(
-              'Error: No se pudo obtener el token de acceso de Google.\n\n'
-              'Por favor, permite popups en tu navegador para este sitio.',
-            );
-          }
-
-          // Si no hay idToken, intentar obtenerlo usando el accessToken
-          if (googleAuth.idToken == null) {
-            debugPrint(
-              '[LoginScreen] ⚠️ idToken no disponible, intentando obtener con accessToken...',
-            );
-            // Intentar usar solo accessToken (puede no funcionar con Firebase Auth)
-            // En este caso, mejor mostrar un error más claro
-            throw Exception(
-              'Error: No se pudo obtener el token de identidad de Google.\n\n'
-              'Esto puede ocurrir si los popups están bloqueados.\n'
-              'Por favor, permite popups en tu navegador para este sitio y vuelve a intentar.',
-            );
-          }
-
-          final credential = GoogleAuthProvider.credential(
-            accessToken: googleAuth.accessToken,
-            idToken: googleAuth.idToken,
-          );
-          userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+          // Si hay otro error, relanzarlo para que se muestre al usuario
+          rethrow;
         }
       } else {
         // Para móvil, usar google_sign_in
