@@ -30,9 +30,21 @@ class RouteHandler extends StatelessWidget {
         }
 
         // También verificar el fragmento (hash) de la URL para rutas como /#/welcome
+        // En GitHub Pages, las rutas se convierten a hash: /admin -> #/admin
         final fragment = Uri.base.fragment;
         // Obtener la URL completa para verificar el hash
         final fullUri = Uri.base.toString();
+        
+        // Extraer el fragmento sin el # si está presente
+        String cleanFragment = fragment;
+        if (cleanFragment.startsWith('#')) {
+          cleanFragment = cleanFragment.substring(1);
+        }
+        if (cleanFragment.startsWith('/')) {
+          cleanFragment = cleanFragment;
+        } else if (cleanFragment.isNotEmpty) {
+          cleanFragment = '/$cleanFragment';
+        }
 
         if (kDebugMode) {
           debugPrint('[RouteHandler] Current path: $path');
@@ -213,10 +225,13 @@ class RouteHandler extends StatelessWidget {
           return StripeReturnScreen(isSuccess: hasPaymentSuccessInUrl);
         }
 
+        // IMPORTANTE: Verificar /admin ANTES de la ruta raíz para evitar que se muestre WelcomeScreen
         // Verificar si es la ruta de admin (/admin)
         // Soporta tanto path directo (/admin) como hash routing (#/admin) para GitHub Pages
         final hasAdminInUrl =
-            fullUri.contains('/admin') || fullUri.contains('#/admin') || fullUri.contains('admin');
+            fullUri.contains('/admin') ||
+            fullUri.contains('#/admin') ||
+            fullUri.contains('index.html#/admin');
         final isAdminPath =
             normalizedPath.endsWith('/admin') ||
             normalizedPath == '/admin' ||
@@ -225,6 +240,8 @@ class RouteHandler extends StatelessWidget {
             normalizedFragment == '/admin' ||
             normalizedFragment == '/admin/' ||
             normalizedFragment.contains('/admin') ||
+            cleanFragment == '/admin' ||
+            cleanFragment.startsWith('/admin') ||
             fragment == 'admin' ||
             fragment == '/admin' ||
             fragment.startsWith('/admin') ||
@@ -232,8 +249,14 @@ class RouteHandler extends StatelessWidget {
 
         if (isAdminPath || isAdminFragment || hasAdminInUrl) {
           if (kDebugMode) {
-            debugPrint('[RouteHandler] Admin route detected, checking authentication and role...');
-            debugPrint('[RouteHandler] Admin - Path: $normalizedPath, Fragment: $fragment');
+            debugPrint('[RouteHandler] ✅ Admin route detected, checking authentication and role...');
+            debugPrint('[RouteHandler] Admin - Path: $normalizedPath');
+            debugPrint('[RouteHandler] Admin - Fragment: $fragment');
+            debugPrint('[RouteHandler] Admin - Clean Fragment: $cleanFragment');
+            debugPrint('[RouteHandler] Admin - Full URI: $fullUri');
+            debugPrint('[RouteHandler] Admin - isAdminPath: $isAdminPath');
+            debugPrint('[RouteHandler] Admin - isAdminFragment: $isAdminFragment');
+            debugPrint('[RouteHandler] Admin - hasAdminInUrl: $hasAdminInUrl');
           }
           // Verificar autenticación y rol para admin
           return _AdminRouteHandler();
