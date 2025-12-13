@@ -1710,10 +1710,21 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
 
       // Construir URLs de retorno
       final currentUrl = Uri.base;
+      String basePath = '';
+      
+      // Detectar si estamos en GitHub Pages y necesitamos el base path
+      final path = currentUrl.path;
+      final host = currentUrl.host;
+      
+      // Si estamos en GitHub Pages (carportsv.github.io) o el path contiene /eug_consultancy
+      if (host.contains('github.io') || path.startsWith('/eug_consultancy')) {
+        basePath = '/eug_consultancy';
+      }
+      
       final baseUrl =
           '${currentUrl.scheme}://${currentUrl.host}${currentUrl.hasPort ? ':${currentUrl.port}' : ''}';
-      final successUrl = '$baseUrl/payment/success?session_id={CHECKOUT_SESSION_ID}';
-      final cancelUrl = '$baseUrl/payment/cancel';
+      final successUrl = '$baseUrl$basePath/payment/success?session_id={CHECKOUT_SESSION_ID}';
+      final cancelUrl = '$baseUrl$basePath/payment/cancel';
 
       if (kDebugMode) {
         debugPrint('[PaymentConfirmationScreen] 🛒 Creando Checkout Session...');

@@ -17,16 +17,25 @@
     var redirectPath = basePath + '/index.html';
     
     // Convert path to hash for Flutter routing
-    // Example: /fzkt_openstreet/welcome -> /fzkt_openstreet/index.html#/welcome
-    if (path && path !== basePath + '/' && path !== basePath && path.startsWith(basePath)) {
-      var routePath = path.replace(basePath, '');
-      if (routePath && routePath !== '/') {
-        // Ensure route starts with /
-        if (!routePath.startsWith('/')) {
-          routePath = '/' + routePath;
-        }
-        redirectPath += '#' + routePath;
+    // Handle both paths with base path (/eug_consultancy/payment/success) 
+    // and without base path (/payment/success) - Stripe redirects
+    var routePath = '';
+    
+    if (path && path.startsWith(basePath)) {
+      // Path starts with base path: /eug_consultancy/payment/success
+      routePath = path.replace(basePath, '');
+    } else if (path && path !== '/' && path !== basePath && path !== basePath + '/') {
+      // Path doesn't start with base path but is not root: /payment/success
+      // This happens when Stripe redirects directly to /payment/success
+      routePath = path;
+    }
+    
+    if (routePath && routePath !== '/') {
+      // Ensure route starts with /
+      if (!routePath.startsWith('/')) {
+        routePath = '/' + routePath;
       }
+      redirectPath += '#' + routePath;
     } else if (hash) {
       // If there's already a hash, preserve it
       redirectPath += hash;
