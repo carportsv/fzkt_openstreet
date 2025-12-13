@@ -75,12 +75,23 @@ String _extractErrorMessage(JSAny? error) {
 }
 
 // Función top-level para inicializar Stripe (solo disponible en web)
+// Retorna un bool en Dart, pero lo declaramos como JSAny? para evitar problemas de tipo
 @JS('stripeInitialize')
-external JSPromise<JSBoolean?> stripeInitializeJS(String publishableKey);
+external JSPromise<JSAny?> stripeInitializeJS(String publishableKey);
 
 // Función top-level para crear Payment Method (solo disponible en web)
 @JS('stripeCreatePaymentMethod')
 external JSPromise<JSObject?> stripeCreatePaymentMethodJS(JSObject cardData);
+
+// Función top-level para confirmar Payment Intent con datos de tarjeta (solo disponible en web)
+// Ahora requiere Supabase URL y API key para crear el payment method en el backend
+@JS('stripeConfirmPaymentWithCardData')
+external JSPromise<JSObject?> stripeConfirmPaymentWithCardDataJS(
+  String clientSecret,
+  JSObject cardData,
+  String supabaseUrl,
+  String supabaseAnonKey,
+);
 
 // Función top-level para confirmar Payment Intent (solo disponible en web)
 @JS('stripeConfirmPayment')

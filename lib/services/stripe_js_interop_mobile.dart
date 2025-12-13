@@ -19,6 +19,15 @@ JSPromise<JSObject?> stripeCreatePaymentMethodJS(JSObject cardData) {
   throw UnsupportedError('stripeCreatePaymentMethodJS solo está disponible en web');
 }
 
+JSPromise<JSObject?> stripeConfirmPaymentWithCardDataJS(
+  String clientSecret,
+  JSObject cardData,
+  String supabaseUrl,
+  String supabaseAnonKey,
+) {
+  throw UnsupportedError('stripeConfirmPaymentWithCardDataJS solo está disponible en web');
+}
+
 JSPromise<JSObject?> stripeConfirmPaymentJS(String clientSecret, String paymentMethodId) {
   throw UnsupportedError('stripeConfirmPaymentJS solo está disponible en web');
 }
