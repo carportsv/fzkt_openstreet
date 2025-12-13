@@ -4,22 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_fonts/google_fonts.dart';
-
-// Verificación robusta de plataforma web
-bool get _isWebPlatform {
-  // Verificar kIsWeb primero (método estándar)
-  if (kIsWeb) return true;
-  
-  // Verificación adicional usando importación condicional
-  // Si dart.library.html está disponible, estamos en web
-  try {
-    // Intentar usar una función que solo existe en web
-    // Si no hay error, estamos en web
-    return true; // Si llegamos aquí y kIsWeb es false, algo está mal
-  } catch (_) {
-    return false;
-  }
-}
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:qr_flutter/qr_flutter.dart' as qr;
