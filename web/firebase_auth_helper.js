@@ -67,8 +67,10 @@ window.firebaseAuthSignInWithGoogle = async function(firebaseConfig) {
     provider.addScope('email');
     provider.addScope('profile');
 
-    // Usar signInWithPopup (más confiable que signInWithRedirect)
+    // Intentar primero con signInWithPopup, si falla usar signInWithRedirect
     let result;
+    let useRedirect = false;
+    
     try {
       console.log('[firebaseAuthSignInWithGoogle] Intentando signInWithPopup...');
       console.log('[firebaseAuthSignInWithGoogle] Origen actual:', window.location.origin);
@@ -79,15 +81,14 @@ window.firebaseAuthSignInWithGoogle = async function(firebaseConfig) {
       console.error('[firebaseAuthSignInWithGoogle] Error code:', popupError.code);
       console.error('[firebaseAuthSignInWithGoogle] Error message:', popupError.message);
       
-      // Si el popup está bloqueado, lanzar error específico
+      // Si el popup está bloqueado, usar signInWithRedirect como fallback
       if (popupError.code === 'auth/popup-blocked' || 
           popupError.code === 'auth/popup-closed-by-user' ||
-          (popupError.message && popupError.message.includes('POPUP_BLOCKED'))) {
-        throw new Error('POPUP_BLOCKED: El popup fue bloqueado. Por favor, permite popups para este sitio.');
-      }
-      
-      // Si el error es de API key, proporcionar mensaje más útil
-      if (popupError.code === 'auth/api-key-not-valid' || 
+          (popupError.message && popupError.message.includes('POPUP_BLOCKED')) ||
+          (popupError.message && popupError.message.includes('Unable to establish a connection'))) {
+        console.log('[firebaseAuthSignInWithGoogle] ⚠️ Popup bloqueado, cambiando a signInWithRedirect...');
+        useRedirect = true;
+      } else if (popupError.code === 'auth/api-key-not-valid' || 
           popupError.code === 'auth/invalid-api-key' ||
           popupError.message && (
             popupError.message.includes('API key') || 
@@ -95,7 +96,7 @@ window.firebaseAuthSignInWithGoogle = async function(firebaseConfig) {
             popupError.message.includes('INVALID_ARGUMENT') ||
             popupError.message.includes('400')
           )) {
-        // Verificar el origen actual
+        // Si el error es de API key, proporcionar mensaje más útil
         const currentOrigin = window.location.origin;
         throw new Error(
           'API_KEY_ERROR: La API key de Firebase no es válida o tiene restricciones que bloquean este origen.\n\n' +
@@ -106,9 +107,29 @@ window.firebaseAuthSignInWithGoogle = async function(firebaseConfig) {
           '3. En Firebase Console, verifica que "localhost" esté en "Authorized domains"\n' +
           '4. Espera 2-5 minutos después de cambiar las restricciones para que se propaguen'
         );
+      } else {
+        // Para otros errores, también intentar redirect
+        console.log('[firebaseAuthSignInWithGoogle] ⚠️ Error con popup, intentando signInWithRedirect...');
+        useRedirect = true;
       }
-      
-      throw popupError;
+    }
+    
+    // Si necesitamos usar redirect, hacerlo ahora
+    if (useRedirect) {
+      try {
+        console.log('[firebaseAuthSignInWithGoogle] Usando signInWithRedirect...');
+        await auth.signInWithRedirect(provider);
+        // signInWithRedirect redirige la página, así que no retornamos aquí
+        // El resultado se procesará cuando la página se recargue después del redirect
+        // Retornar una Promise que indica que se usó redirect
+        return Promise.resolve({
+          redirect: true,
+          message: 'Redirect iniciado. La página se recargará después de la autenticación.'
+        });
+      } catch (redirectError) {
+        console.error('[firebaseAuthSignInWithGoogle] Error en signInWithRedirect:', redirectError);
+        throw new Error('No se pudo iniciar la autenticación ni con popup ni con redirect: ' + redirectError.message);
+      }
     }
     
     // Verificar que el resultado sea válido
@@ -170,6 +191,64 @@ window.firebaseAuthSignInWithGoogle = async function(firebaseConfig) {
   } catch (error) {
     console.error('[firebaseAuthSignInWithGoogle] Error:', error);
     // Asegurar que los errores también se retornen como Promise rechazada
+    return Promise.reject(error);
+  }
+};
+
+// Función para obtener el resultado del redirect cuando la página se recarga
+window.firebaseAuthGetRedirectResult = async function(firebaseConfig) {
+  try {
+    // Inicializar Firebase si no está inicializado
+    if (!firebase.apps || firebase.apps.length === 0) {
+      if (!firebaseConfig) {
+        throw new Error('Firebase config es requerido para inicializar');
+      }
+      firebase.initializeApp(firebaseConfig);
+      console.log('[firebaseAuthGetRedirectResult] ✅ Firebase inicializado');
+    }
+    
+    const auth = firebase.auth();
+    if (!auth) {
+      throw new Error('Firebase Auth no está disponible');
+    }
+    
+    // Obtener el resultado del redirect
+    const result = await auth.getRedirectResult();
+    
+    if (!result || !result.user) {
+      // No hay resultado del redirect, retornar null
+      return Promise.resolve(null);
+    }
+    
+    // Obtener los tokens
+    let idToken = null;
+    let accessToken = null;
+    
+    if (result.credential) {
+      idToken = result.credential.idToken;
+      accessToken = result.credential.accessToken;
+    }
+    
+    if (!idToken) {
+      idToken = await result.user.getIdToken();
+    }
+    
+    const resultData = {
+      user: {
+        uid: result.user.uid,
+        email: result.user.email,
+        displayName: result.user.displayName,
+        photoURL: result.user.photoURL,
+      },
+      credential: {
+        idToken: idToken,
+        accessToken: accessToken || '',
+      }
+    };
+    
+    return Promise.resolve(resultData);
+  } catch (error) {
+    console.error('[firebaseAuthGetRedirectResult] Error:', error);
     return Promise.reject(error);
   }
 };

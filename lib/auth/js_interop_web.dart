@@ -10,7 +10,7 @@ bool _isPromise(dynamic obj) {
     // También verificar que then sea una función
     final thenMethod = obj.then;
     if (thenMethod == null) return false;
-    
+
     // Verificar que sea una función (Function o cualquier callable)
     // También verificar que tenga 'catch' usando notación de corchetes (las Promises siempre tienen catch)
     try {
@@ -37,18 +37,18 @@ extension JSPromiseExtension<T extends JSAny?> on JSPromise<T> {
     try {
       // Intentar como dynamic primero para mayor compatibilidad
       promiseObj = this as dynamic;
-      
+
       // Verificar que sea una Promise válida
       if (!_isPromise(promiseObj)) {
         completer.completeError(
-          Exception('El objeto retornado no es una Promise válida. Tipo: ${promiseObj.runtimeType}'),
+          Exception(
+            'El objeto retornado no es una Promise válida. Tipo: ${promiseObj.runtimeType}',
+          ),
         );
         return completer.future;
       }
     } catch (e) {
-      completer.completeError(
-        Exception('Error al verificar Promise: $e. Tipo: $runtimeType'),
-      );
+      completer.completeError(Exception('Error al verificar Promise: $e. Tipo: $runtimeType'));
       return completer.future;
     }
 
@@ -63,7 +63,7 @@ extension JSPromiseExtension<T extends JSAny?> on JSPromise<T> {
       if (!completer.isCompleted) {
         try {
           final errorObj = error?.dartify();
-          final errorMessage = errorObj is Map 
+          final errorMessage = errorObj is Map
               ? (errorObj['message'] ?? errorObj.toString())
               : (errorObj?.toString() ?? 'Unknown error');
           completer.completeError(Exception(errorMessage));
@@ -92,6 +92,10 @@ extension JSPromiseExtension<T extends JSAny?> on JSPromise<T> {
 // Nota: La función JavaScript debe estar disponible en window.firebaseAuthSignInWithGoogle
 @JS('firebaseAuthSignInWithGoogle')
 external JSPromise<JSObject?> firebaseAuthSignInWithGoogleJS(JSObject config);
+
+// Función para obtener el resultado del redirect cuando la página se recarga
+@JS('firebaseAuthGetRedirectResult')
+external JSPromise<JSObject?> firebaseAuthGetRedirectResultJS(JSObject config);
 
 // Función alternativa para verificar si la función JS está disponible
 @JS('window')

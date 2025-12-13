@@ -7,7 +7,8 @@ import './login_screen.dart';
 import './routing_screen.dart';
 import '../screens/welcome/welcome/welcome_screen.dart';
 // Importación condicional para leer hash en web
-import '../router/route_handler_stub.dart' if (dart.library.html) '../router/route_handler_web.dart';
+import '../router/route_handler_stub.dart'
+    if (dart.library.html) '../router/route_handler_web.dart';
 
 /// The definitive, stable AuthGate.
 /// It uses a [StreamBuilder] to listen to Firebase's auth state changes.
@@ -310,7 +311,7 @@ class _AuthGateContentState extends State<_AuthGateContent> {
             String path = Uri.base.path;
             String fragment = Uri.base.fragment;
             final fullUri = Uri.base.toString();
-            
+
             // Normalizar el path removiendo el base-href si está presente (GitHub Pages)
             String normalizedPath = path;
             if (path.startsWith('/eug_consultancy')) {
@@ -319,7 +320,7 @@ class _AuthGateContentState extends State<_AuthGateContent> {
                 normalizedPath = '/';
               }
             }
-            
+
             // Si el fragmento está vacío, intentar leerlo de window.location.hash
             if (fragment.isEmpty && kIsWeb) {
               try {
@@ -333,7 +334,7 @@ class _AuthGateContentState extends State<_AuthGateContent> {
                 }
               }
             }
-            
+
             // Normalizar el fragment
             String normalizedFragment = fragment;
             if (fragment.isNotEmpty) {
@@ -341,9 +342,10 @@ class _AuthGateContentState extends State<_AuthGateContent> {
                 normalizedFragment = '/$fragment';
               }
             }
-            
+
             // Verificar si es ruta admin (path o hash) - considerar tanto path original como normalizado
-            isAdminRoute = path.contains('/admin') ||
+            isAdminRoute =
+                path.contains('/admin') ||
                 path.endsWith('/admin') ||
                 path == '/admin' ||
                 normalizedPath.contains('/admin') ||
@@ -357,9 +359,11 @@ class _AuthGateContentState extends State<_AuthGateContent> {
                 fullUri.contains('/admin') ||
                 fullUri.contains('#/admin') ||
                 fullUri.contains('index.html#/admin');
-            
+
             if (kDebugMode) {
-              debugPrint('[AuthGate] Web - Path: $path, Fragment: $fragment, Normalized: $normalizedFragment');
+              debugPrint(
+                '[AuthGate] Web - Path: $path, Fragment: $fragment, Normalized: $normalizedFragment',
+              );
               debugPrint('[AuthGate] Web - Full URI: $fullUri');
               debugPrint('[AuthGate] Web - Is admin route: $isAdminRoute');
             }
@@ -368,7 +372,7 @@ class _AuthGateContentState extends State<_AuthGateContent> {
               debugPrint('[AuthGate] Error verificando ruta: $e');
             }
           }
-          
+
           // Si estamos en /admin, mostrar LoginScreen (requiere login)
           if (isAdminRoute) {
             if (kDebugMode) {
@@ -376,7 +380,7 @@ class _AuthGateContentState extends State<_AuthGateContent> {
             }
             return const LoginScreen();
           }
-          
+
           // Si no es /admin, redirigir a WelcomeScreen (público)
           if (kDebugMode) {
             debugPrint('[AuthGate] Web - Redirigiendo a WelcomeScreen (ruta pública)');

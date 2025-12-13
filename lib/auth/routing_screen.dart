@@ -12,7 +12,8 @@ import 'package:fzkt_openstreet/screens/welcome/welcome/welcome_screen.dart';
 import './login_screen.dart';
 import 'user_service.dart';
 // Importación condicional para leer hash en web
-import '../router/route_handler_stub.dart' if (dart.library.html) '../router/route_handler_web.dart';
+import '../router/route_handler_stub.dart'
+    if (dart.library.html) '../router/route_handler_web.dart';
 
 class RoutingScreen extends StatefulWidget {
   const RoutingScreen({super.key});
@@ -163,7 +164,7 @@ class _RoutingScreenState extends State<RoutingScreen> {
         String path = Uri.base.path;
         String fragment = Uri.base.fragment;
         final fullUri = Uri.base.toString();
-        
+
         // Si el fragmento está vacío, intentar leerlo de window.location.hash
         if (fragment.isEmpty && kIsWeb) {
           try {
@@ -177,7 +178,7 @@ class _RoutingScreenState extends State<RoutingScreen> {
             }
           }
         }
-        
+
         // Normalizar el fragment
         String normalizedFragment = fragment;
         if (fragment.isNotEmpty) {
@@ -185,9 +186,10 @@ class _RoutingScreenState extends State<RoutingScreen> {
             normalizedFragment = '/$fragment';
           }
         }
-        
+
         // Verificar si es ruta admin (path o hash)
-        isAdminRoute = path.contains('/admin') ||
+        isAdminRoute =
+            path.contains('/admin') ||
             path.endsWith('/admin') ||
             path == '/admin' ||
             fragment.contains('/admin') ||
@@ -198,9 +200,11 @@ class _RoutingScreenState extends State<RoutingScreen> {
             fullUri.contains('/admin') ||
             fullUri.contains('#/admin') ||
             fullUri.contains('index.html#/admin');
-        
+
         if (kDebugMode) {
-          debugPrint('[RoutingScreen] Web - Path: $path, Fragment: $fragment, Normalized: $normalizedFragment');
+          debugPrint(
+            '[RoutingScreen] Web - Path: $path, Fragment: $fragment, Normalized: $normalizedFragment',
+          );
           debugPrint('[RoutingScreen] Web - Full URI: $fullUri');
           debugPrint('[RoutingScreen] Web - Is admin route: $isAdminRoute');
         }
