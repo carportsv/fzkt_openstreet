@@ -15,6 +15,7 @@ import '../../../l10n/app_localizations.dart';
 import 'receipt_screen.dart';
 import '../../../shared/widgets/whatsapp_floating_button.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../utils/web_redirect_helper.dart';
 
 // Constants
 const _kPrimaryColor = Color(0xFF1D4ED8);
@@ -94,6 +95,35 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
   @override
   void initState() {
     super.initState();
+    // Manejar retorno de Stripe Checkout (solo en web)
+    if (kIsWeb) {
+      _handleStripeReturn();
+    }
+  }
+
+  /// Maneja el retorno de Stripe Checkout
+  void _handleStripeReturn() {
+    // Detectar si el usuario regresó de Stripe Checkout
+    final uri = Uri.base;
+
+    if (uri.path.contains('/payment/success') || uri.queryParameters.containsKey('session_id')) {
+      final sessionId = uri.queryParameters['session_id'];
+      if (sessionId != null && sessionId.isNotEmpty) {
+        // Verificar el pago en segundo plano
+        _verifyStripePayment(sessionId);
+      }
+    } else if (uri.path.contains('/payment/cancel')) {
+      // Usuario canceló el pago
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Pago cancelado. Puedes intentar nuevamente.'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -250,9 +280,19 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
   }
 
   Future<void> _processPayment() async {
-    // Validar formulario solo si se selecciona tarjeta
-    if (_selectedPaymentMethod == 'card') {
+    if (kDebugMode) {
+      debugPrint('[PaymentConfirmationScreen] 💳 Iniciando procesamiento de pago...');
+      debugPrint('[PaymentConfirmationScreen] Método seleccionado: $_selectedPaymentMethod');
+      debugPrint('[PaymentConfirmationScreen] Es web: $kIsWeb');
+    }
+
+    // Validar formulario solo si se selecciona tarjeta Y estamos en móvil
+    // En web, no hay campos del formulario, así que no validamos
+    if (_selectedPaymentMethod == 'card' && !kIsWeb) {
       if (_formKey.currentState == null || !_formKey.currentState!.validate()) {
+        if (kDebugMode) {
+          debugPrint('[PaymentConfirmationScreen] ❌ Validación del formulario falló');
+        }
         return;
       }
     }
@@ -302,33 +342,54 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
         clientPhone: widget.clientPhone,
         notes: widget.notes,
         scheduledDateTime: widget.scheduledDateTime,
-        cardNumber: _selectedPaymentMethod == 'card' ? _cardNumberController.text.trim() : '',
-        cardExpiry: _selectedPaymentMethod == 'card' ? _cardExpiryController.text.trim() : '',
-        cardName: _selectedPaymentMethod == 'card' ? _cardNameController.text.trim() : '',
+        // En web con Stripe Checkout, no tenemos datos de tarjeta (el usuario los ingresará en Stripe)
+        // En móvil, sí necesitamos los datos para Payment Sheet
+        cardNumber: (_selectedPaymentMethod == 'card' && !kIsWeb)
+            ? _cardNumberController.text.trim()
+            : '',
+        cardExpiry: (_selectedPaymentMethod == 'card' && !kIsWeb)
+            ? _cardExpiryController.text.trim()
+            : '',
+        cardName: (_selectedPaymentMethod == 'card' && !kIsWeb)
+            ? _cardNameController.text.trim()
+            : '',
       );
 
       // Procesar pago con Stripe si es tarjeta
       String? paymentIntentId;
       if (_selectedPaymentMethod == 'card') {
-        // Validar datos de tarjeta
-        final cardValidation = StripeService.validateCardData(
-          number: _cardNumberController.text.trim(),
-          expMonth: _cardExpiryController.text.split('/').isNotEmpty
-              ? _cardExpiryController.text.split('/')[0].trim()
-              : '',
-          expYear: _cardExpiryController.text.split('/').length > 1
-              ? '20${_cardExpiryController.text.split('/')[1].trim()}'
-              : '',
-          cvc: _cardCvvController.text.trim(),
-        );
+        // En web, usar Stripe Checkout (NO requiere Raw Card Data APIs)
+        // En móvil, usar Payment Sheet (ya funciona)
+        if (kIsWeb) {
+          // Usar Stripe Checkout para web
+          await _processStripeCheckout(rideData);
+          return; // El método maneja la redirección, no continuamos aquí
+        } else {
+          // En móvil, usar el método actual con Payment Sheet
+          // (Este código ya funciona y no necesita cambios)
+        }
 
-        if (!(cardValidation['isValid'] as bool)) {
-          final errors = cardValidation['errors'] as List<dynamic>;
-          setState(() {
-            _isProcessing = false;
-            _paymentError = errors.join(', ');
-          });
-          return;
+        // Validar datos de tarjeta (solo para móvil, web no necesita)
+        if (!kIsWeb) {
+          final cardValidation = StripeService.validateCardData(
+            number: _cardNumberController.text.trim(),
+            expMonth: _cardExpiryController.text.split('/').isNotEmpty
+                ? _cardExpiryController.text.split('/')[0].trim()
+                : '',
+            expYear: _cardExpiryController.text.split('/').length > 1
+                ? '20${_cardExpiryController.text.split('/')[1].trim()}'
+                : '',
+            cvc: _cardCvvController.text.trim(),
+          );
+
+          if (!(cardValidation['isValid'] as bool)) {
+            final errors = cardValidation['errors'] as List<dynamic>;
+            setState(() {
+              _isProcessing = false;
+              _paymentError = errors.join(', ');
+            });
+            return;
+          }
         }
 
         // Crear el viaje primero para obtener el rideId
@@ -358,16 +419,15 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
           return;
         }
 
-        // Confirmar Payment Intent usando Payment Sheet (móvil) o confirmPayment (web)
-        // Payment Sheet maneja automáticamente la entrada de datos y 3D Secure en móvil
-        // En web, usamos los datos de tarjeta directamente
+        // Confirmar Payment Intent usando Payment Sheet (móvil)
+        // En web, esto no se ejecuta porque usamos Checkout
         final confirmationResult = await StripeService.confirmPaymentIntentWithCard(
           clientSecret: paymentIntent.clientSecret,
           currency: paymentIntent.currency,
           cardholderName: _cardNameController.text.trim().isNotEmpty
               ? _cardNameController.text.trim()
               : null,
-          // Datos de tarjeta para web (solo se usan si estamos en web)
+          // Datos de tarjeta para móvil (Payment Sheet los maneja internamente)
           cardNumber: _cardNumberController.text.trim(),
           expMonth: _cardExpiryController.text.split('/').isNotEmpty
               ? _cardExpiryController.text.split('/')[0].trim()
@@ -1163,6 +1223,112 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
   }
 
   Widget _buildCardForm() {
+    // En web, mostrar solo botón de Stripe Checkout
+    // Verificar explícitamente que estamos en web
+    final isWeb = kIsWeb || (identical(0, 0.0)); // Verificación adicional para web
+    if (kDebugMode) {
+      debugPrint('[PaymentConfirmationScreen] _buildCardForm - kIsWeb: $kIsWeb, isWeb: $isWeb');
+    }
+    if (kIsWeb) {
+      return Center(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 500),
+          padding: const EdgeInsets.all(_kSpacing * 2),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(_kBorderRadius),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                'Pago con Tarjeta',
+                style: GoogleFonts.exo(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: _kTextColor,
+                ),
+              ),
+              const SizedBox(height: _kSpacing * 2),
+              Container(
+                width: double.infinity,
+                height: 56,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [_kPrimaryColor, _kPrimaryColor.withValues(alpha: 0.8)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(_kBorderRadius),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _kPrimaryColor.withValues(alpha: 0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: ElevatedButton(
+                  onPressed: _isProcessing
+                      ? null
+                      : () {
+                          // En web, no validar formulario porque no hay campos
+                          // Solo llamar directamente a _processPayment
+                          _processPayment();
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(_kBorderRadius),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.payment, color: Colors.white),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Pagar con Stripe',
+                        style: GoogleFonts.exo(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: _kSpacing),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.info_outline, size: 16, color: Colors.grey.shade600),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      'Serás redirigido a Stripe para completar el pago de forma segura',
+                      style: GoogleFonts.exo(fontSize: 12, color: Colors.grey.shade600),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // En móvil, mostrar formulario completo (Payment Sheet se usa internamente)
     return Center(
       child: Container(
         constraints: const BoxConstraints(maxWidth: 500),
@@ -1514,6 +1680,293 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
         ),
       ),
     );
+  }
+
+  /// Inicia el proceso de pago con Stripe Checkout (solo web)
+  Future<void> _processStripeCheckout(CreateRideData rideData) async {
+    if (kDebugMode) {
+      debugPrint('[PaymentConfirmationScreen] 🚀 Iniciando proceso de Stripe Checkout...');
+    }
+
+    try {
+      // Crear el viaje primero para obtener el rideId
+      String rideId;
+      try {
+        if (kDebugMode) {
+          debugPrint('[PaymentConfirmationScreen] 📝 Creando viaje...');
+        }
+        rideId = await _rideService.createRideRequest(rideData);
+        if (kDebugMode) {
+          debugPrint('[PaymentConfirmationScreen] ✅ Viaje creado con ID: $rideId');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('[PaymentConfirmationScreen] ❌ Error creando viaje: $e');
+        }
+        setState(() {
+          _isProcessing = false;
+          _paymentError = 'Error al crear el viaje: ${e.toString()}';
+        });
+        return;
+      }
+
+      // Construir URLs de retorno
+      final currentUrl = Uri.base;
+      final baseUrl =
+          '${currentUrl.scheme}://${currentUrl.host}${currentUrl.hasPort ? ':${currentUrl.port}' : ''}';
+      final successUrl = '$baseUrl/payment/success?session_id={CHECKOUT_SESSION_ID}';
+      final cancelUrl = '$baseUrl/payment/cancel';
+
+      if (kDebugMode) {
+        debugPrint('[PaymentConfirmationScreen] 🛒 Creando Checkout Session...');
+        debugPrint('[PaymentConfirmationScreen] Success URL: $successUrl');
+        debugPrint('[PaymentConfirmationScreen] Cancel URL: $cancelUrl');
+      }
+
+      // Crear Checkout Session
+      final checkoutSession = await StripeService.createCheckoutSession(
+        rideId: rideId,
+        amount: widget.price,
+        currency: 'usd',
+        originAddress: widget.originAddress,
+        destinationAddress: widget.destinationAddress,
+        clientEmail: widget.clientEmail,
+        clientName: widget.clientName,
+        successUrl: successUrl,
+        cancelUrl: cancelUrl,
+      );
+
+      if (checkoutSession == null) {
+        setState(() {
+          _isProcessing = false;
+          _paymentError = 'Error al crear la sesión de pago. Intenta nuevamente.';
+        });
+        return;
+      }
+
+      if (kDebugMode) {
+        debugPrint(
+          '[PaymentConfirmationScreen] ✅ Checkout Session creada: ${checkoutSession.sessionId}',
+        );
+        debugPrint('[PaymentConfirmationScreen] 🔗 Redirigiendo a: ${checkoutSession.checkoutUrl}');
+      }
+
+      // Redirigir al usuario a Stripe Checkout
+      final uri = Uri.parse(checkoutSession.checkoutUrl);
+
+      if (kDebugMode) {
+        debugPrint(
+          '[PaymentConfirmationScreen] 🔗 Intentando abrir URL: ${checkoutSession.checkoutUrl}',
+        );
+      }
+
+      try {
+        // En web, redirigir en la misma pestaña para evitar múltiples pestañas
+        // En móvil, abrir en aplicación externa
+        if (kIsWeb) {
+          // Redirigir en la misma pestaña usando helper (evita dart:html deprecado)
+          redirectToUrl(checkoutSession.checkoutUrl);
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Redirigiendo a Stripe para completar el pago...'),
+                backgroundColor: Colors.blue,
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+
+          // Resetear estado de procesamiento (el usuario salió de la app)
+          setState(() {
+            _isProcessing = false;
+          });
+        } else {
+          // En móvil, usar LaunchMode.externalApplication
+          final launchMode = LaunchMode.externalApplication;
+
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: launchMode);
+
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Serás redirigido a Stripe para completar el pago.'),
+                  backgroundColor: Colors.blue,
+                  duration: Duration(seconds: 3),
+                ),
+              );
+            }
+
+            // Resetear estado de procesamiento (el usuario salió de la app)
+            setState(() {
+              _isProcessing = false;
+            });
+          } else {
+            // Si canLaunchUrl falla, intentar de todas formas
+            if (kDebugMode) {
+              debugPrint(
+                '[PaymentConfirmationScreen] ⚠️ canLaunchUrl retornó false, intentando de todas formas...',
+              );
+            }
+
+            try {
+              await launchUrl(uri, mode: launchMode);
+
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Serás redirigido a Stripe para completar el pago.'),
+                    backgroundColor: Colors.blue,
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+              }
+
+              setState(() {
+                _isProcessing = false;
+              });
+            } catch (e2) {
+              if (kDebugMode) {
+                debugPrint('[PaymentConfirmationScreen] ❌ Error al abrir URL: $e2');
+              }
+              setState(() {
+                _isProcessing = false;
+                _paymentError = 'No se pudo abrir la página de pago. Verifica tu conexión.';
+              });
+            }
+          }
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('[PaymentConfirmationScreen] ❌ Error abriendo URL: $e');
+        }
+        setState(() {
+          _isProcessing = false;
+          _paymentError = 'Error al abrir la página de pago: ${e.toString()}';
+        });
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[PaymentConfirmationScreen] ❌ Error en Stripe Checkout: $e');
+      }
+      setState(() {
+        _isProcessing = false;
+        _paymentError = 'Error al procesar el pago: ${e.toString()}';
+      });
+    }
+  }
+
+  /// Verifica el pago después de que el usuario regresa de Stripe Checkout
+  Future<void> _verifyStripePayment(String sessionId) async {
+    if (kDebugMode) {
+      debugPrint('[PaymentConfirmationScreen] 🔍 Verificando pago con session_id: $sessionId');
+    }
+
+    setState(() {
+      _isProcessing = true;
+      _paymentError = null;
+    });
+
+    try {
+      // Verificar el pago
+      final result = await StripeService.verifyCheckoutSession(sessionId: sessionId);
+
+      if (result['success'] == true && result['payment_status'] == 'paid') {
+        // Pago exitoso
+        final paymentIntentId = result['payment_intent_id'] as String?;
+        final rideId = result['ride_id'] as String?;
+
+        if (kDebugMode) {
+          debugPrint('[PaymentConfirmationScreen] ✅ Pago verificado exitosamente');
+          debugPrint('[PaymentConfirmationScreen] Payment Intent ID: $paymentIntentId');
+          debugPrint('[PaymentConfirmationScreen] Ride ID: $rideId');
+        }
+
+        // Actualizar el viaje si es necesario (la Edge Function ya lo hace, pero por si acaso)
+        if (rideId != null && paymentIntentId != null) {
+          try {
+            await _rideService.updateRidePaymentStatus(
+              rideId: rideId,
+              paymentIntentId: paymentIntentId,
+              paymentStatus: 'authorized',
+            );
+          } catch (e) {
+            if (kDebugMode) {
+              debugPrint('[PaymentConfirmationScreen] ⚠️ Error actualizando estado: $e');
+            }
+            // No bloquear el flujo
+          }
+        }
+
+        // Navegar a la pantalla de recibo
+        if (mounted) {
+          setState(() {
+            _isProcessing = false;
+          });
+
+          // Generar recibo
+          final l10n = AppLocalizations.of(context);
+          final receipt = _generateReceiptText(l10n);
+          final receiptNumber = 'REC-${DateTime.now().millisecondsSinceEpoch}';
+          final now = DateTime.now();
+
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => ReceiptScreen(
+                receiptText: receipt,
+                receiptNumber: receiptNumber,
+                receiptDate: now,
+                totalAmount: widget.price,
+                originAddress: widget.originAddress,
+                destinationAddress: widget.destinationAddress,
+                flightNumber: widget.flightNumber,
+                vehicleType: widget.vehicleType,
+                clientName: widget.clientName,
+                clientEmail: widget.clientEmail,
+                clientPhone: widget.clientPhone,
+                distanceKm: widget.distanceKm,
+                passengerCount: widget.passengerCount,
+                childSeats: widget.childSeats,
+                handLuggage: widget.handLuggage,
+                checkInLuggage: widget.checkInLuggage,
+                scheduledDate: widget.scheduledDateTime,
+                scheduledTime: widget.scheduledDateTime != null
+                    ? DateFormat('HH:mm').format(widget.scheduledDateTime!)
+                    : null,
+                paymentMethod: 'card',
+                notes: widget.notes,
+              ),
+            ),
+          );
+        }
+      } else {
+        // Pago no exitoso o cancelado
+        final error = result['error'] as String?;
+        setState(() {
+          _isProcessing = false;
+          _paymentError = error ?? 'El pago no fue completado. Intenta nuevamente.';
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(error ?? 'El pago no fue completado.'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[PaymentConfirmationScreen] ❌ Error verificando pago: $e');
+      }
+      setState(() {
+        _isProcessing = false;
+        _paymentError = 'Error al verificar el pago: ${e.toString()}';
+      });
+    }
   }
 
   /// Inicia el proceso de pago con PayPal

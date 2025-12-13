@@ -28,12 +28,9 @@ bool _isPromise(dynamic obj) {
     // En js_interop, puede ser cualquier objeto callable
     return true; // Si tiene then, asumimos que es una Promise
   } catch (e) {
-    // Si hay error, intentar verificar directamente si es JSPromise
-    try {
-      return obj is JSPromise;
-    } catch (_) {
-      return false;
-    }
+    // No se puede hacer runtime check con tipos js_interop
+    // Si hay error accediendo a las propiedades, no es una Promise válida
+    return false;
   }
 }
 
@@ -63,7 +60,9 @@ extension JSPromiseExtension<T extends JSAny?> on JSPromise<T> {
     } catch (e) {
       // Si hay error, intentar de todas formas llamando then
       if (kDebugMode) {
-        debugPrint('[JSPromiseExtension] Error al verificar Promise: $e, intentando de todas formas');
+        debugPrint(
+          '[JSPromiseExtension] Error al verificar Promise: $e, intentando de todas formas',
+        );
       }
       promiseObj = this as dynamic;
     }
